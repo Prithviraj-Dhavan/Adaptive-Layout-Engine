@@ -1,0 +1,181 @@
+@import url('https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400..800;1,400..700&family=Manrope:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@300;400;500;600;700&display=swap');
+@import "tailwindcss";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+:root {
+  --alabaster: #f8f6f0;
+  --linen: #eee8dc;
+  --vellum: #e2dacb;
+  --charcoal: #181513;
+  --espresso: #0f0d0b;
+  --vermilion: #e14b2d;
+  --burntAmber: #964407;
+  --rawUmber: #554339;
+  --bone: #fffdfa;
+
+  /* Earthy Editorial Tokens */
+  --bg-light: #fbf8f4;
+  --bg-dark: #0d0c0b;
+  --surface-light: #f5efe8;
+  --surface-dark: #110f0e;
+  --border-light: #e2dad2;
+  --border-dark: #262320;
+  
+  --font-editorial: 'EB Garamond', Georgia, serif;
+  --font-sans: 'Manrope', system-ui, -apple-system, sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html, body {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  overflow-x: hidden;
+  user-select: none;
+}
+
+/* ---------------- Editorial Typography ---------------- */
+.font-editorial {
+  font-family: var(--font-editorial);
+}
+
+.font-sans {
+  font-family: var(--font-sans);
+}
+
+.font-mono {
+  font-family: var(--font-mono);
+}
+
+.tracking-monumental {
+  letter-spacing: 0.28em;
+}
+
+.tracking-condensed {
+  letter-spacing: -0.04em;
+}
+
+/* ---------------- Pedestal Specimen Shadow & Base ---------------- */
+.pedestal-shadow {
+  box-shadow: 
+    0 40px 100px -20px rgba(24, 21, 19, 0.35),
+    0 20px 40px -15px rgba(225, 75, 45, 0.12),
+    0 0 0 1px rgba(255, 255, 255, 0.1);
+}
+
+.pedestal-base {
+  background: radial-gradient(ellipse at 50% 50%, rgba(20, 16, 13, 0.45) 0%, rgba(85, 67, 57, 0.15) 42%, transparent 72%);
+  filter: blur(18px);
+}
+
+html:not(.dark) .pedestal-base {
+  background: radial-gradient(ellipse at 50% 50%, rgba(40, 30, 20, 0.22) 0%, rgba(140, 110, 90, 0.08) 45%, transparent 72%);
+  filter: blur(20px);
+}
+
+/* ---------------- 3D Stage & Chassis Sharp Rendering ---------------- */
+#stage-viewport, .stage-viewport {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: geometricPrecision;
+}
+
+#device-chassis, .device-chassis {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: geometricPrecision;
+  outline: 1px solid transparent;
+  transition: transform 0.6s cubic-bezier(0.16, 1, 0.3, 1), width 0.5s cubic-bezier(0.16, 1, 0.3, 1), height 0.5s cubic-bezier(0.16, 1, 0.3, 1), border-radius 0.4s ease;
+}
+
+#ad-canvas, .ad-canvas {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: geometricPrecision;
+}
+
+/* ---------------- Celestial / Starry Night Particle Layer ---------------- */
+.celestial-starfield {
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.6s ease-in-out;
+}
+
+html.dark .celestial-starfield {
+  opacity: 0.95;
+}
+
+.starfield-plane-1 {
+  background-image: 
+    radial-gradient(1px 1px at 12% 18%, rgba(255, 255, 255, 0.9) 100%, transparent),
+    radial-gradient(1.5px 1.5px at 28% 42%, rgba(255, 255, 255, 0.95) 100%, transparent),
+    radial-gradient(1px 1px at 45% 12%, rgba(255, 255, 255, 0.8) 100%, transparent),
+    radial-gradient(2px 2px at 78% 22%, rgba(255, 255, 255, 1) 100%, transparent),
+    radial-gradient(1px 1px at 84% 35%, rgba(255, 255, 255, 0.75) 100%, transparent),
+    radial-gradient(1.5px 1.5px at 16% 75%, rgba(255, 255, 255, 0.85) 100%, transparent),
+    radial-gradient(1px 1px at 38% 85%, rgba(255, 255, 255, 0.7) 100%, transparent),
+    radial-gradient(2px 2px at 62% 68%, rgba(255, 255, 255, 0.95) 100%, transparent),
+    radial-gradient(1.2px 1.2px at 88% 82%, rgba(255, 255, 255, 0.9) 100%, transparent),
+    radial-gradient(1px 1px at 94% 54%, rgba(255, 255, 255, 0.85) 100%, transparent);
+  background-size: 550px 550px;
+}
+
+.starfield-plane-2 {
+  background-image: 
+    radial-gradient(1.2px 1.2px at 7% 55%, rgba(255, 255, 255, 0.85) 100%, transparent),
+    radial-gradient(1px 1px at 22% 88%, rgba(255, 255, 255, 0.7) 100%, transparent),
+    radial-gradient(2.2px 2.2px at 34% 24%, rgba(255, 255, 255, 0.95) 100%, transparent),
+    radial-gradient(1px 1px at 52% 48%, rgba(255, 255, 255, 0.65) 100%, transparent),
+    radial-gradient(1.5px 1.5px at 71% 8%, rgba(255, 255, 255, 0.9) 100%, transparent),
+    radial-gradient(1px 1px at 68% 58%, rgba(255, 255, 255, 0.75) 100%, transparent),
+    radial-gradient(1.8px 1.8px at 82% 76%, rgba(255, 255, 255, 0.9) 100%, transparent),
+    radial-gradient(1px 1px at 91% 15%, rgba(255, 255, 255, 0.8) 100%, transparent),
+    radial-gradient(1.2px 1.2px at 48% 92%, rgba(255, 255, 255, 0.75) 100%, transparent);
+  background-size: 780px 780px;
+}
+
+@keyframes celestialBreathe {
+  0%, 100% { opacity: 0.88; transform: scale(1); }
+  50% { opacity: 1; transform: scale(1.005); }
+}
+
+.animate-celestial {
+  animation: celestialBreathe 9s ease-in-out infinite;
+}
+
+/* ---------------- Global Smooth Transitions ---------------- */
+body, aside, main, div, button, h1, h2, h3, p, span {
+  transition-property: background-color, border-color, color, fill, stroke, box-shadow;
+  transition-duration: 300ms;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Custom Scrollbars */
+::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(150, 68, 7, 0.3);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(225, 75, 45, 0.5);
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
