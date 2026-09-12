@@ -170,6 +170,46 @@ export function App() {
     };
   }, []);
 
+  // Global Keyboard Shortcuts (1-4 for Plates, D for Dark Mode, C for Studio, E for Export, I for Telemetry)
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement;
+      if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable)) {
+        return;
+      }
+
+      if (e.key === '1') {
+        setIsAutoDeviceMode(false);
+        setActivePlateKey('plate1');
+      } else if (e.key === '2') {
+        setIsAutoDeviceMode(false);
+        setActivePlateKey('plate2');
+      } else if (e.key === '3') {
+        setIsAutoDeviceMode(false);
+        setActivePlateKey('plate3');
+      } else if (e.key === '4') {
+        setIsAutoDeviceMode(false);
+        setActivePlateKey('plate4');
+      } else if (e.key === 'd' || e.key === 'D') {
+        setIsDarkMode((prev) => !prev);
+      } else if (e.key === 'c' || e.key === 'C') {
+        setIsCustomStudioOpen((prev) => !prev);
+      } else if (e.key === 'e' || e.key === 'E') {
+        setIsExportModalOpen((prev) => !prev);
+      } else if (e.key === 'i' || e.key === 'I') {
+        setIsTelemetryOpen((prev) => !prev);
+      } else if (e.key === 'Escape') {
+        setIsCustomStudioOpen(false);
+        setIsExportModalOpen(false);
+        setIsTelemetryOpen(false);
+        setIsMobileFolioOpen(false);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
+
   // Customise Your Ad Parameters State: committed state + staged draft state
   const [customParams, setCustomParams] = useState<CustomAdParams>(defaultCustomParams);
   const [draftParams, setDraftParams] = useState<CustomAdParams>(defaultCustomParams);
