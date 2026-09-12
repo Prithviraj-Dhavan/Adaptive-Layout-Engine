@@ -210,8 +210,16 @@ export function App() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
 
-  // Customise Your Ad Parameters State: committed state + staged draft state
-  const [customParams, setCustomParams] = useState<CustomAdParams>(defaultCustomParams);
+  // Customise Your Ad Parameters State: committed state (with localStorage persistence) + staged draft state
+  const [customParams, setCustomParams] = useState<CustomAdParams>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const saved = localStorage.getItem('flam_studio_custom_params');
+        if (saved) return { ...defaultCustomParams, ...JSON.parse(saved) };
+      } catch {}
+    }
+    return defaultCustomParams;
+  });
   const [draftParams, setDraftParams] = useState<CustomAdParams>(defaultCustomParams);
   const [isCustomStudioOpen, setIsCustomStudioOpen] = useState<boolean>(false);
   const [isExportModalOpen, setIsExportModalOpen] = useState<boolean>(false);
@@ -229,6 +237,11 @@ export function App() {
     setCustomParams({ ...draftParams });
     studioSnapshotRef.current = { ...draftParams };
     setIsCustomStudioOpen(false);
+    if (typeof window !== 'undefined') {
+      try {
+        localStorage.setItem('flam_studio_custom_params', JSON.stringify(draftParams));
+      } catch {}
+    }
   };
 
   const handleCancelStudio = () => {
