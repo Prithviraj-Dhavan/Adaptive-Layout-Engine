@@ -44,7 +44,7 @@ const baseSpecimens: SpecimenConfig[] = [
     key: 'landscape',
     plate: 'PLATE II',
     ratioLabel: '16:9 PANORAMIC',
-    name: 'Mobile Landscape',
+    name: 'Landscape',
     dimensionsText: '844 × 390 px',
     biomeLabel: 'Tactile Biome',
     biomeValue: 'Bilateral Ergonomic',
@@ -216,7 +216,7 @@ export function App() {
       try {
         const saved = localStorage.getItem('flam_studio_custom_params');
         if (saved) return { ...defaultCustomParams, ...JSON.parse(saved) };
-      } catch {}
+      } catch { }
     }
     return defaultCustomParams;
   });
@@ -240,7 +240,7 @@ export function App() {
     if (typeof window !== 'undefined') {
       try {
         localStorage.setItem('flam_studio_custom_params', JSON.stringify(draftParams));
-      } catch {}
+      } catch { }
     }
   };
 
@@ -350,14 +350,14 @@ export function App() {
     const paddingY = 24; // Vertical padding
     const chassisW = surfaceWidth + 28;
     const chassisH = surfaceHeight + 28;
-    
+
     const availableW = Math.max(80, stageSize.width - paddingX);
     const availableH = Math.max(80, stageSize.height - paddingY);
-    
+
     const scaleX = availableW / chassisW;
     const scaleY = availableH / chassisH;
     const fitScale = Math.min(scaleX, scaleY);
-    
+
     // Scale down smoothly if needed, but do not scale up beyond 1.0 to preserve sharpness
     return Math.max(0.18, Math.min(1.0, fitScale));
   }, [stageSize, surfaceWidth, surfaceHeight]);
@@ -616,11 +616,10 @@ export function App() {
                     setActivePlateKey(getOptimalPlateForViewport(window.innerWidth, window.innerHeight));
                   }
                 }}
-                className={`text-[9px] font-mono uppercase px-2.5 py-1 rounded-xs border transition-all cursor-pointer font-bold ${
-                  isAutoDeviceMode
+                className={`text-[9px] font-mono uppercase px-2.5 py-1 rounded-xs border transition-all cursor-pointer font-bold ${isAutoDeviceMode
                     ? 'border-[#e14b2d] bg-[#e14b2d] text-white shadow-xs'
                     : 'border-[#d6ccc2] dark:border-[#2b2622] bg-white/50 dark:bg-[#181513] text-[#73675e] dark:text-[#887c72] hover:border-[#e14b2d] hover:text-[#e14b2d]'
-                }`}
+                  }`}
                 title="Automatically adapt card ratio to match device screen"
               >
                 {isAutoDeviceMode ? 'AUTO SYNC : ON' : 'AUTO SYNC : OFF'}
@@ -643,11 +642,10 @@ export function App() {
                         setIsAutoDeviceMode(false);
                       }
                     }}
-                    className={`plate-item group cursor-pointer p-4 border-l-2 transition-all ${
-                      isActive
+                    className={`plate-item group cursor-pointer p-4 border-l-2 transition-all ${isActive
                         ? 'border-[#e14b2d] bg-white/70 dark:bg-[#1a1715] shadow-xs'
                         : 'border-transparent hover:border-[#141210]/40 dark:hover:border-stone-600 bg-transparent hover:bg-white/40 dark:hover:bg-[#171413]/50'
-                    }`}
+                      }`}
                   >
                     <div className="flex items-start justify-between">
                       <span className={`text-[10px] font-mono uppercase tracking-widest font-bold ${isActive ? 'text-[#e14b2d]' : 'text-stone-400'}`}>
@@ -728,11 +726,10 @@ export function App() {
                   <button
                     id="btn-camera-2d"
                     onClick={() => handleSelectCamera('2d')}
-                    className={`camera-btn h-7 px-2.5 sm:px-3 text-[10px] sm:text-[11px] font-mono uppercase tracking-wider font-semibold rounded-xs transition-all cursor-pointer ${
-                      cameraMode === '2d' && rotX === 0 && rotY === 0
+                    className={`camera-btn h-7 px-2.5 sm:px-3 text-[10px] sm:text-[11px] font-mono uppercase tracking-wider font-semibold rounded-xs transition-all cursor-pointer ${cameraMode === '2d' && rotX === 0 && rotY === 0
                         ? 'border border-[#181513] dark:border-stone-200 bg-[#181513] text-white dark:bg-white dark:text-[#181513] shadow-xs'
                         : 'text-[#5e534c] dark:text-[#c4b8ad] hover:text-[#141210] dark:hover:text-white'
-                    }`}
+                      }`}
                     title="2D Flat Orthographic View"
                   >
                     2D
@@ -740,11 +737,10 @@ export function App() {
                   <button
                     id="btn-camera-3d"
                     onClick={() => handleSelectCamera('3d')}
-                    className={`camera-btn h-7 px-2.5 sm:px-3 text-[10px] sm:text-[11px] font-mono uppercase tracking-wider font-semibold rounded-xs transition-all cursor-pointer ${
-                      cameraMode === '3d' || rotX !== 0 || rotY !== 0
+                    className={`camera-btn h-7 px-2.5 sm:px-3 text-[10px] sm:text-[11px] font-mono uppercase tracking-wider font-semibold rounded-xs transition-all cursor-pointer ${cameraMode === '3d' || rotX !== 0 || rotY !== 0
                         ? 'border border-[#181513] dark:border-stone-200 bg-[#181513] text-white dark:bg-white dark:text-[#181513] shadow-xs'
                         : 'text-[#5e534c] dark:text-[#c4b8ad] hover:text-[#141210] dark:hover:text-white'
-                    }`}
+                      }`}
                     title="3D Perspective & Interactive Orbit View"
                   >
                     3D
@@ -754,87 +750,86 @@ export function App() {
 
               {/* Right Side: CUSTOMISE, DOWNLOAD AD, THEME TOGGLE, TELEMETRY / HAMBURGER */}
               <div className="flex items-center space-x-2 shrink-0">
-              {/* Customise Your Ad Button */}
-              <button
-                id="btn-customise"
-                onClick={handleOpenStudio}
-                className={`h-8 px-3 sm:px-3.5 rounded-full border transition-all flex items-center space-x-1.5 cursor-pointer shadow-xs text-[9px] sm:text-[10px] font-mono uppercase tracking-wider font-semibold ${
-                  activePlateKey === 'custom' || isCustomStudioOpen
-                    ? 'border-[#e14b2d] bg-[#e14b2d] text-white font-bold'
-                    : 'border-[#e14b2d]/60 bg-[#e14b2d]/10 text-[#e14b2d] hover:bg-[#e14b2d] hover:text-white'
-                }`}
-                title="Open Customise your Ad Studio"
-              >
-                <Sliders className="w-3.5 h-3.5" />
-                <span>CUSTOMISE</span>
-              </button>
-
-              {/* Download / Export Prepared Ad Button */}
-              <button
-                id="btn-download-ad"
-                onClick={() => {
-                  setIsExportModalOpen(true);
-                  confetti({
-                    particleCount: 50,
-                    spread: 60,
-                    origin: { y: 0.15, x: 0.75 },
-                    colors: [activeCustomParams.accentColor || '#e14b2d', '#964407', '#ffffff'],
-                  });
-                }}
-                className="h-8 px-3 sm:px-3.5 rounded-full border border-[#141210] dark:border-stone-200 bg-[#141210] dark:bg-white text-white dark:text-[#141210] hover:bg-[#e14b2d] dark:hover:bg-[#e14b2d] dark:hover:text-white dark:hover:border-[#e14b2d] hover:border-[#e14b2d] transition-all flex items-center space-x-1.5 cursor-pointer shadow-xs text-[9px] sm:text-[10px] font-mono uppercase tracking-wider font-bold"
-                title="Download & Export Prepared Ad (PNG, HTML5, JSON)"
-              >
-                <Download className="w-3.5 h-3.5" />
-                <span>DOWNLOAD AD</span>
-              </button>
-
-              <div className="flex items-center p-0.5 sm:p-1 space-x-1 rounded-full border border-[#d6ccc2] dark:border-[#2b2622] bg-white/80 dark:bg-[#161311]/90 backdrop-blur-md shadow-xs">
-                {/* Illumination Dark/Light Switch */}
+                {/* Customise Your Ad Button */}
                 <button
-                  id="btn-theme"
-                  onClick={toggleTheme}
-                  aria-label="Toggle Illumination Mode"
-                  className="group w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center text-[#5e534c] dark:text-[#f5ede4] hover:bg-black/5 dark:hover:bg-white/10 transition-all cursor-pointer"
-                  title="Toggle Light / Dark Illumination"
+                  id="btn-customise"
+                  onClick={handleOpenStudio}
+                  className={`h-8 px-3 sm:px-3.5 rounded-full border transition-all flex items-center space-x-1.5 cursor-pointer shadow-xs text-[9px] sm:text-[10px] font-mono uppercase tracking-wider font-semibold ${activePlateKey === 'custom' || isCustomStudioOpen
+                      ? 'border-[#e14b2d] bg-[#e14b2d] text-white font-bold'
+                      : 'border-[#e14b2d]/60 bg-[#e14b2d]/10 text-[#e14b2d] hover:bg-[#e14b2d] hover:text-white'
+                    }`}
+                  title="Open Customise your Ad Studio"
                 >
-                  {isDarkMode ? (
-                    <svg className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-[#d6ccc2] transition-transform group-hover:scale-110" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.8" viewBox="0 0 24 24">
-                      <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
-                    </svg>
-                  ) : (
-                    <svg className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-[#5e534c] transition-transform group-hover:scale-110" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.8" viewBox="0 0 24 24">
-                      <circle cx="12" cy="12" r="5" />
-                      <line x1="12" x2="12" y1="1" y2="3" />
-                      <line x1="12" x2="12" y1="21" y2="23" />
-                      <line x1="4.22" x2="5.64" y1="4.22" y2="5.64" />
-                      <line x1="18.36" x2="19.78" y1="18.36" y2="19.78" />
-                      <line x1="1" x2="3" y1="12" y2="12" />
-                      <line x1="21" x2="23" y1="12" y2="12" />
-                      <line x1="4.22" x2="5.64" y1="19.78" y2="18.36" />
-                      <line x1="18.36" x2="19.78" y1="5.64" y2="4.22" />
-                    </svg>
-                  )}
+                  <Sliders className="w-3.5 h-3.5" />
+                  <span>CUSTOMISE</span>
                 </button>
 
-                <div className="w-px h-3 sm:h-4 bg-[#e2dad2] dark:bg-[#2b2622]" />
-
-                {/* Hamburger / Telemetry Drawer Trigger */}
+                {/* Download / Export Prepared Ad Button */}
                 <button
-                  id="btn-telemetry"
-                  onClick={() => setIsTelemetryOpen(true)}
-                  aria-label="Open Telemetry & Inspector"
-                  className="group w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center text-[#5e534c] dark:text-[#f5ede4] hover:bg-black/5 dark:hover:bg-white/10 transition-all cursor-pointer"
-                  title="Open Telemetry & Inspector Drawer"
+                  id="btn-download-ad"
+                  onClick={() => {
+                    setIsExportModalOpen(true);
+                    confetti({
+                      particleCount: 50,
+                      spread: 60,
+                      origin: { y: 0.15, x: 0.75 },
+                      colors: [activeCustomParams.accentColor || '#e14b2d', '#964407', '#ffffff'],
+                    });
+                  }}
+                  className="h-8 px-3 sm:px-3.5 rounded-full border border-[#141210] dark:border-stone-200 bg-[#141210] dark:bg-white text-white dark:text-[#141210] hover:bg-[#e14b2d] dark:hover:bg-[#e14b2d] dark:hover:text-white dark:hover:border-[#e14b2d] hover:border-[#e14b2d] transition-all flex items-center space-x-1.5 cursor-pointer shadow-xs text-[9px] sm:text-[10px] font-mono uppercase tracking-wider font-bold"
+                  title="Download & Export Prepared Ad (PNG, HTML5, JSON)"
                 >
-                  <svg className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-[#5e534c] dark:text-[#f5ede4] transition-transform group-hover:scale-110" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.75" viewBox="0 0 24 24">
-                    <line x1="4" x2="20" y1="6" y2="6" />
-                    <line x1="4" x2="20" y1="12" y2="12" />
-                    <line x1="4" x2="20" y1="18" y2="18" />
-                  </svg>
+                  <Download className="w-3.5 h-3.5" />
+                  <span>DOWNLOAD AD</span>
                 </button>
+
+                <div className="flex items-center p-0.5 sm:p-1 space-x-1 rounded-full border border-[#d6ccc2] dark:border-[#2b2622] bg-white/80 dark:bg-[#161311]/90 backdrop-blur-md shadow-xs">
+                  {/* Illumination Dark/Light Switch */}
+                  <button
+                    id="btn-theme"
+                    onClick={toggleTheme}
+                    aria-label="Toggle Illumination Mode"
+                    className="group w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center text-[#5e534c] dark:text-[#f5ede4] hover:bg-black/5 dark:hover:bg-white/10 transition-all cursor-pointer"
+                    title="Toggle Light / Dark Illumination"
+                  >
+                    {isDarkMode ? (
+                      <svg className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-[#d6ccc2] transition-transform group-hover:scale-110" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.8" viewBox="0 0 24 24">
+                        <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
+                      </svg>
+                    ) : (
+                      <svg className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-[#5e534c] transition-transform group-hover:scale-110" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.8" viewBox="0 0 24 24">
+                        <circle cx="12" cy="12" r="5" />
+                        <line x1="12" x2="12" y1="1" y2="3" />
+                        <line x1="12" x2="12" y1="21" y2="23" />
+                        <line x1="4.22" x2="5.64" y1="4.22" y2="5.64" />
+                        <line x1="18.36" x2="19.78" y1="18.36" y2="19.78" />
+                        <line x1="1" x2="3" y1="12" y2="12" />
+                        <line x1="21" x2="23" y1="12" y2="12" />
+                        <line x1="4.22" x2="5.64" y1="19.78" y2="18.36" />
+                        <line x1="18.36" x2="19.78" y1="5.64" y2="4.22" />
+                      </svg>
+                    )}
+                  </button>
+
+                  <div className="w-px h-3 sm:h-4 bg-[#e2dad2] dark:bg-[#2b2622]" />
+
+                  {/* Hamburger / Telemetry Drawer Trigger */}
+                  <button
+                    id="btn-telemetry"
+                    onClick={() => setIsTelemetryOpen(true)}
+                    aria-label="Open Telemetry & Inspector"
+                    className="group w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center text-[#5e534c] dark:text-[#f5ede4] hover:bg-black/5 dark:hover:bg-white/10 transition-all cursor-pointer"
+                    title="Open Telemetry & Inspector Drawer"
+                  >
+                    <svg className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-[#5e534c] dark:text-[#f5ede4] transition-transform group-hover:scale-110" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.75" viewBox="0 0 24 24">
+                      <line x1="4" x2="20" y1="6" y2="6" />
+                      <line x1="4" x2="20" y1="12" y2="12" />
+                      <line x1="4" x2="20" y1="18" y2="18" />
+                    </svg>
+                  </button>
+                </div>
               </div>
             </div>
-          </div>
           </div>
 
           {/* SECOND ROW: SPECIMEN PLATE BUTTONS (Down of top controls) */}
@@ -849,11 +844,10 @@ export function App() {
                   setActivePlateKey(getOptimalPlateForViewport(window.innerWidth, window.innerHeight));
                 }
               }}
-              className={`px-3 py-1.5 text-[10px] font-mono uppercase tracking-wider whitespace-nowrap transition-all border shrink-0 rounded-xs cursor-pointer font-bold ${
-                isAutoDeviceMode
+              className={`px-3 py-1.5 text-[10px] font-mono uppercase tracking-wider whitespace-nowrap transition-all border shrink-0 rounded-xs cursor-pointer font-bold ${isAutoDeviceMode
                   ? 'border-[#e14b2d] bg-[#e14b2d] text-white shadow-xs'
                   : 'border-[#d6ccc2] dark:border-[#2b2622] bg-white/70 dark:bg-[#191614] text-[#5e534c] dark:text-[#c4b8ad] hover:border-[#e14b2d] hover:text-[#e14b2d]'
-              }`}
+                }`}
               title="Auto-detect and match card ratio to device"
             >
               AUTO
@@ -871,11 +865,10 @@ export function App() {
                       setIsAutoDeviceMode(false);
                     }
                   }}
-                  className={`px-2.5 py-1.5 text-[10px] font-mono whitespace-nowrap transition-all border shrink-0 rounded-xs cursor-pointer ${
-                    isActive
+                  className={`px-2.5 py-1.5 text-[10px] font-mono whitespace-nowrap transition-all border shrink-0 rounded-xs cursor-pointer ${isActive
                       ? 'border-[#e14b2d] bg-[#e14b2d] text-white font-bold shadow-xs'
                       : 'border-[#d6ccc2] dark:border-[#2b2622] bg-white/70 dark:bg-[#191614] text-[#5e534c] dark:text-[#c4b8ad] hover:border-[#141210]'
-                  }`}
+                    }`}
                 >
                   <span className="font-bold mr-1">{specimen.plate}</span>
                   <span>{specimen.ratioLabel}</span>
@@ -897,11 +890,9 @@ export function App() {
             onTouchEnd={handleTouchEnd}
             onTouchCancel={handleTouchEnd}
             onDoubleClick={handleDoubleClick}
-            className={`flex-1 w-full h-full flex items-center justify-center relative select-none overflow-hidden touch-none transition-all duration-300 ${
-              isCustomStudioOpen ? 'z-40' : 'z-10'
-            } ${
-              cameraMode === '3d' ? 'cursor-grab active:cursor-grabbing' : 'cursor-default'
-            }`}
+            className={`flex-1 w-full h-full flex items-center justify-center relative select-none overflow-hidden touch-none transition-all duration-300 ${isCustomStudioOpen ? 'z-40' : 'z-10'
+              } ${cameraMode === '3d' ? 'cursor-grab active:cursor-grabbing' : 'cursor-default'
+              }`}
             style={{
               perspective: cameraMode === '3d' ? '1200px' : 'none',
               perspectiveOrigin: 'center center',
@@ -910,9 +901,8 @@ export function App() {
             {/* HARDWARE SCULPTURAL CHASSIS (TITANIUM MONOLITH) */}
             <div
               id="device-chassis"
-              className={`relative rounded-[48px] p-3.5 bg-gradient-to-b from-[#d8d1c6] via-[#c2b7a6] to-[#988c7c] dark:from-[#2a2622] dark:via-[#1c1917] dark:to-[#12100e] pedestal-shadow shrink-0 transition-all duration-300 ${
-                isCustomStudioOpen ? 'shadow-2xl ring-2 ring-[#e14b2d]/40' : ''
-              }`}
+              className={`relative rounded-[48px] p-3.5 bg-gradient-to-b from-[#d8d1c6] via-[#c2b7a6] to-[#988c7c] dark:from-[#2a2622] dark:via-[#1c1917] dark:to-[#12100e] pedestal-shadow shrink-0 transition-all duration-300 ${isCustomStudioOpen ? 'shadow-2xl ring-2 ring-[#e14b2d]/40' : ''
+                }`}
               style={{
                 width: `${surfaceWidth}px`,
                 height: `${surfaceHeight}px`,
@@ -957,32 +947,32 @@ export function App() {
                   const ar = surfaceWidth / surfaceHeight;
                   const isUltraWide = ar >= 3.0;
                   const isSplitLandscape = ar >= 1.35 && ar < 3.0;
-                  
+
                   // Spatial degradation regimes
                   const isVeryCompactH = surfaceHeight < 390;
                   const isCompactH = surfaceHeight < 520;
                   const isVeryCompactW = surfaceWidth < 340;
 
                   // Subline Visibility (Stage 4 Text Truncation / Drop)
-                  const showSubline = isUltraWide 
-                    ? surfaceHeight >= 190 
-                    : isSplitLandscape 
-                    ? surfaceHeight >= 270 
-                    : surfaceHeight >= 480;
+                  const showSubline = isUltraWide
+                    ? surfaceHeight >= 190
+                    : isSplitLandscape
+                      ? surfaceHeight >= 270
+                      : surfaceHeight >= 480;
 
                   // Chips Visibility (Stage 5 Drop Badges / Chips)
                   const showChips = isUltraWide
                     ? surfaceHeight >= 160 && surfaceWidth >= 650
                     : isSplitLandscape
-                    ? surfaceHeight >= 240
-                    : surfaceHeight >= 420;
+                      ? surfaceHeight >= 240
+                      : surfaceHeight >= 420;
 
                   // Dynamic Typography (Stage 2 Font Tightening & Scaling)
                   const titleFontSize = isUltraWide
                     ? Math.max(12, Math.min(surfaceHeight * 0.18, surfaceWidth * 0.035, 26))
                     : isSplitLandscape
-                    ? Math.max(12, Math.min(surfaceWidth * 0.042, surfaceHeight * 0.065, isCompactH ? 20 : 28))
-                    : Math.max(12, Math.min(surfaceWidth * 0.052, surfaceHeight * 0.052, isVeryCompactW ? 14 : isVeryCompactH ? 16 : isCompactH ? 20 : 30));
+                      ? Math.max(12, Math.min(surfaceWidth * 0.042, surfaceHeight * 0.065, isCompactH ? 20 : 28))
+                      : Math.max(12, Math.min(surfaceWidth * 0.052, surfaceHeight * 0.052, isVeryCompactW ? 14 : isVeryCompactH ? 16 : isCompactH ? 20 : 30));
 
                   const hasNotch = (activePlateKey === 'custom' ? activeCustomParams.notch : activeSpecimen.notch) && surfaceHeight >= 480 && !isUltraWide && !isSplitLandscape;
 
@@ -995,8 +985,8 @@ export function App() {
                   const heroSize = isUltraWide
                     ? Math.max(36, Math.min(surfaceHeight * 0.82, surfaceWidth * 0.20, 135))
                     : isSplitLandscape
-                    ? Math.max(48, Math.min(surfaceWidth * 0.38, (surfaceHeight - (showChips ? 50 : 20)) * 0.85, 260))
-                    : Math.max(36, Math.min(surfaceWidth * 0.65, verticalAvailableMiddle * 0.82, isVeryCompactH ? 70 : isCompactH ? 220 : 270));
+                      ? Math.max(48, Math.min(surfaceWidth * 0.38, (surfaceHeight - (showChips ? 50 : 20)) * 0.85, 260))
+                      : Math.max(36, Math.min(surfaceWidth * 0.65, verticalAvailableMiddle * 0.82, isVeryCompactH ? 70 : isCompactH ? 220 : 270));
 
                   // Dynamic Theme-Opposite Tokens for Inner Screen
                   const screenBgClass = isDarkMode ? 'bg-[#fcf9f5]' : 'bg-[#110e0c]';
@@ -1404,16 +1394,14 @@ export function App() {
       <div
         id="mobile-folio-backdrop"
         onClick={() => setIsMobileFolioOpen(false)}
-        className={`lg:hidden fixed inset-0 z-50 transition-opacity duration-300 bg-black/50 backdrop-blur-xs ${
-          isMobileFolioOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
-        }`}
+        className={`lg:hidden fixed inset-0 z-50 transition-opacity duration-300 bg-black/50 backdrop-blur-xs ${isMobileFolioOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
+          }`}
       />
 
       <aside
         id="mobile-folio-drawer"
-        className={`lg:hidden fixed top-0 left-0 h-full w-[310px] sm:w-[360px] max-w-[85vw] z-50 bg-[#fcf8f4] dark:bg-[#110f0e] text-[#141210] dark:text-[#f5ede4] border-r border-[#e2dad2] dark:border-[#262320] shadow-2xl transition-transform duration-300 ease-out transform flex flex-col justify-between p-6 overflow-y-auto ${
-          isMobileFolioOpen ? 'translate-x-0' : '-translate-x-full'
-        }`}
+        className={`lg:hidden fixed top-0 left-0 h-full w-[310px] sm:w-[360px] max-w-[85vw] z-50 bg-[#fcf8f4] dark:bg-[#110f0e] text-[#141210] dark:text-[#f5ede4] border-r border-[#e2dad2] dark:border-[#262320] shadow-2xl transition-transform duration-300 ease-out transform flex flex-col justify-between p-6 overflow-y-auto ${isMobileFolioOpen ? 'translate-x-0' : '-translate-x-full'
+          }`}
       >
         <div>
           {/* Header with Close */}
@@ -1456,11 +1444,10 @@ export function App() {
                     }
                     setIsMobileFolioOpen(false);
                   }}
-                  className={`cursor-pointer p-3 border-l-2 transition-all rounded-r-xs ${
-                    isActive
+                  className={`cursor-pointer p-3 border-l-2 transition-all rounded-r-xs ${isActive
                       ? 'border-[#e14b2d] bg-white/70 dark:bg-[#1a1715] shadow-xs'
                       : 'border-transparent bg-transparent hover:bg-white/40 dark:hover:bg-[#171413]/50'
-                  }`}
+                    }`}
                 >
                   <div className="flex items-center justify-between">
                     <span className={`text-[9px] font-mono uppercase tracking-widest font-bold ${isActive ? 'text-[#e14b2d]' : 'text-stone-400'}`}>
@@ -1494,16 +1481,14 @@ export function App() {
       <div
         id="custom-studio-backdrop"
         onClick={handleCancelStudio}
-        className={`fixed inset-0 z-30 transition-opacity duration-300 bg-black/40 dark:bg-black/60 backdrop-blur-xs ${
-          isCustomStudioOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
-        }`}
+        className={`fixed inset-0 z-30 transition-opacity duration-300 bg-black/40 dark:bg-black/60 backdrop-blur-xs ${isCustomStudioOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
+          }`}
       />
 
       <aside
         id="custom-studio-drawer"
-        className={`fixed top-0 right-0 h-full w-[310px] sm:w-[420px] md:w-[460px] max-w-full z-50 bg-[#fcf8f4] dark:bg-[#110f0e] text-[#141210] dark:text-[#f5ede4] border-l border-[#e2dad2] dark:border-[#262320] shadow-2xl transition-transform duration-300 ease-out transform flex flex-col justify-between overflow-hidden ${
-          isCustomStudioOpen ? 'translate-x-0' : 'translate-x-full'
-        }`}
+        className={`fixed top-0 right-0 h-full w-[310px] sm:w-[420px] md:w-[460px] max-w-full z-50 bg-[#fcf8f4] dark:bg-[#110f0e] text-[#141210] dark:text-[#f5ede4] border-l border-[#e2dad2] dark:border-[#262320] shadow-2xl transition-transform duration-300 ease-out transform flex flex-col justify-between overflow-hidden ${isCustomStudioOpen ? 'translate-x-0' : 'translate-x-full'
+          }`}
       >
         <CustomiseAdStudio
           params={draftParams}
@@ -1519,16 +1504,14 @@ export function App() {
       <div
         id="telemetry-backdrop"
         onClick={() => setIsTelemetryOpen(false)}
-        className={`fixed inset-0 z-50 transition-opacity duration-300 bg-black/25 backdrop-blur-[1px] ${
-          isTelemetryOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
-        }`}
+        className={`fixed inset-0 z-50 transition-opacity duration-300 bg-black/25 backdrop-blur-[1px] ${isTelemetryOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
+          }`}
       />
 
       <aside
         id="telemetry-drawer"
-        className={`fixed top-0 right-0 h-full w-[320px] sm:w-[360px] z-50 bg-[#fcf8f4] dark:bg-[#110f0e] text-[#141210] dark:text-[#f5ede4] border-l border-[#e2dad2] dark:border-[#262320] shadow-2xl transition-transform duration-300 ease-out transform flex flex-col justify-between overflow-hidden ${
-          isTelemetryOpen ? 'translate-x-0' : 'translate-x-full'
-        }`}
+        className={`fixed top-0 right-0 h-full w-[320px] sm:w-[360px] z-50 bg-[#fcf8f4] dark:bg-[#110f0e] text-[#141210] dark:text-[#f5ede4] border-l border-[#e2dad2] dark:border-[#262320] shadow-2xl transition-transform duration-300 ease-out transform flex flex-col justify-between overflow-hidden ${isTelemetryOpen ? 'translate-x-0' : 'translate-x-full'
+          }`}
       >
         <div className="flex-1 overflow-y-auto">
           {/* Header */}
@@ -1669,13 +1652,12 @@ export function App() {
                         setDraggedIndex(null);
                         setDragOverIndex(null);
                       }}
-                      className={`p-2.5 rounded-sm bg-white/60 dark:bg-[#181513] border transition-all flex items-center justify-between cursor-grab active:cursor-grabbing group shadow-2xs ${
-                        isDragged
+                      className={`p-2.5 rounded-sm bg-white/60 dark:bg-[#181513] border transition-all flex items-center justify-between cursor-grab active:cursor-grabbing group shadow-2xs ${isDragged
                           ? 'opacity-40 border-dashed border-[#e14b2d] scale-98'
                           : isOver
-                          ? 'border-[#e14b2d] bg-[#e14b2d]/5 dark:bg-[#e14b2d]/10 shadow-md ring-1 ring-[#e14b2d]'
-                          : 'border-[#e2dad2] dark:border-[#262320] hover:border-[#e14b2d]/50 dark:hover:border-[#e14b2d]/50 hover:bg-white dark:hover:bg-[#201c19]'
-                      }`}
+                            ? 'border-[#e14b2d] bg-[#e14b2d]/5 dark:bg-[#e14b2d]/10 shadow-md ring-1 ring-[#e14b2d]'
+                            : 'border-[#e2dad2] dark:border-[#262320] hover:border-[#e14b2d]/50 dark:hover:border-[#e14b2d]/50 hover:bg-white dark:hover:bg-[#201c19]'
+                        }`}
                     >
                       <div className="flex items-center gap-1.5 min-w-0">
                         <GripVertical className="w-3.5 h-3.5 text-stone-400 group-hover:text-[#e14b2d] shrink-0" />
