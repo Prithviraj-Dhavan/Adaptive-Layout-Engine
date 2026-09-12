@@ -962,7 +962,7 @@ export function App() {
 
                   // Chips Visibility (Stage 5 Drop Badges / Chips)
                   const showChips = isUltraWide
-                    ? surfaceHeight >= 160 && surfaceWidth >= 650
+                    ? false // Always hide chips in Ribbon to perfectly fit headline
                     : isSplitLandscape
                       ? surfaceHeight >= 240
                       : surfaceHeight >= 420;
@@ -1158,7 +1158,7 @@ export function App() {
 
                           <h2
                             id="creative-headline"
-                            className={`font-editorial font-normal leading-[1.08] tracking-tight ${textHeadlineClass} mt-1 truncate`}
+                            className={`font-editorial font-normal leading-[1.08] tracking-tight ${textHeadlineClass} mt-1 whitespace-nowrap`}
                             style={{ fontSize: `${titleFontSize}px` }}
                           >
                             {activeHeadlineMain} {activeHeadlineAccent && <span className="italic font-light" style={{ color: activeAccent }}>{activeHeadlineAccent}</span>}
