@@ -1591,6 +1591,10 @@ export function App() {
                   <span className="text-[#554339] dark:text-[#9e9086]">DOM Overflow</span>
                   <span className="font-semibold text-[#e14b2d]">0.00% (Strict Fit)</span>
                 </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-[#554339] dark:text-[#9e9086]">Solver Latency</span>
+                  <span className="font-semibold text-emerald-600 dark:text-emerald-400">&lt; 0.35 ms (Pass 1–5)</span>
+                </div>
               </div>
             </div>
 
