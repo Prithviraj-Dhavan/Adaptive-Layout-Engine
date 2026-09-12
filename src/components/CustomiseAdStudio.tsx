@@ -1,10 +1,15 @@
-import React from 'react';
+import React, { useRef } from 'react';
 import { 
   Smartphone, 
   Monitor, 
   Tv, 
   Square, 
-  RotateCcw
+  RotateCcw,
+  Check,
+  X,
+  Upload,
+  Image as ImageIcon,
+  CheckCircle2
 } from 'lucide-react';
 
 export interface CustomAdParams {
@@ -49,26 +54,32 @@ export const defaultCustomParams: CustomAdParams = {
   height: 690,
   borderRadius: 48,
   notch: true,
-  headline: 'Acoustic Perfection',
-  headlineAccent: 'Perfection.',
-  subline: 'Adaptive 48dB Hybrid ANC with real-time room resonance & dynamic spatial masonry.',
-  heroMode: 'vector',
-  heroImageUrl: 'https://images.unsplash.com/photo-1546435770-a3e426bf472b?auto=format&fit=crop&w=600&q=80',
-  heroPresetKey: 'headphones',
+  headline: 'Defy Gravity',
+  headlineAccent: 'Future.',
+  subline: 'Ultra-responsive ZoomX foam with carbon fiber flyplate & adaptive kinetic propulsion.',
+  heroMode: 'image',
+  heroImageUrl: 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&w=600&q=80',
+  heroPresetKey: 'sneaker',
   badgeText: 'SURFACE SPECIMEN № 01',
-  specCode: 'AURA-ACOUSTIC',
-  tag1: '48DB ANC',
-  tag2: 'TI-DRIVER',
-  tag3: 'LOSSLESS',
-  currency: '$',
-  price: '349',
-  originalPrice: '429',
-  editionLabel: 'ÉDITION LIMITÉE',
+  specCode: 'NIKE-KINETIC',
+  tag1: 'ZOOMX FOAM',
+  tag2: 'CARBON-PLATE',
+  tag3: 'ULTRA-LIGHT',
+  currency: '₹',
+  price: '12,999',
+  originalPrice: '17,995',
+  editionLabel: 'LIMITED DROP',
   ctaLabel: 'ACQUIRE EDITION',
   accentColor: '#e14b2d',
 };
 
 export const heroPresets = [
+  {
+    id: 'sneaker',
+    name: 'Kinetic Runner',
+    url: 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&w=600&q=80',
+    mode: 'image' as const,
+  },
   {
     id: 'headphones',
     name: 'Acoustic Monolith',
@@ -79,12 +90,6 @@ export const heroPresets = [
     id: 'timepiece',
     name: 'Swiss Chronometer',
     url: 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?auto=format&fit=crop&w=600&q=80',
-    mode: 'image' as const,
-  },
-  {
-    id: 'sneaker',
-    name: 'Kinetic Runner',
-    url: 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&w=600&q=80',
     mode: 'image' as const,
   },
   {
@@ -117,6 +122,8 @@ interface CustomiseAdStudioProps {
   onChange: (updater: (prev: CustomAdParams) => CustomAdParams) => void;
   onReset: () => void;
   onClose?: () => void;
+  onSave?: () => void;
+  onCancel?: () => void;
 }
 
 export const CustomiseAdStudio: React.FC<CustomiseAdStudioProps> = ({
@@ -124,9 +131,32 @@ export const CustomiseAdStudio: React.FC<CustomiseAdStudioProps> = ({
   onChange,
   onReset,
   onClose,
+  onSave,
+  onCancel,
 }) => {
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+
   const update = <K extends keyof CustomAdParams>(key: K, value: CustomAdParams[K]) => {
     onChange((prev) => ({ ...prev, [key]: value }));
+  };
+
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const dataUrl = event.target?.result as string;
+      if (dataUrl) {
+        onChange((prev) => ({
+          ...prev,
+          heroImageUrl: dataUrl,
+          heroMode: 'image',
+          heroPresetKey: 'custom-upload',
+        }));
+      }
+    };
+    reader.readAsDataURL(file);
   };
 
   const setSurfacePreset = (w: number, h: number, r: number, notch: boolean) => {
@@ -146,9 +176,6 @@ export const CustomiseAdStudio: React.FC<CustomiseAdStudioProps> = ({
         <div>
           <div className="flex items-center space-x-2">
             <span className="text-[10px] font-mono font-bold text-[#e14b2d] uppercase tracking-monumental">Studio</span>
-            <span className="text-[9px] font-mono px-1.5 py-0.2 border border-[#d6ccc2] dark:border-[#332f2b] text-[#73675e] dark:text-[#9e9086]">
-              v4.2 JIT
-            </span>
           </div>
           <h2 className="font-editorial text-2xl text-[#141210] dark:text-[#f5ede4] font-normal leading-tight mt-0.5">
             Customise your <span className="italic font-light text-[#e14b2d]">Ad.</span>
@@ -176,12 +203,12 @@ export const CustomiseAdStudio: React.FC<CustomiseAdStudioProps> = ({
       {/* Chapters Container */}
       <div className="p-5 space-y-6 flex-1">
         {/* =========================================================================
-            § 01 Chassis & Surface Dimensions
+            01 Chassis & Surface Dimensions
            ========================================================================= */}
         <section className="space-y-3">
           <div className="flex items-center justify-between pb-1.5 border-b border-[#e2dad2] dark:border-[#262320]">
             <div className="flex items-baseline space-x-2">
-              <span className="text-[10px] font-mono font-bold text-[#e14b2d]">§ 01</span>
+              <span className="text-[10px] font-mono font-bold text-[#e14b2d]">01</span>
               <h3 className="font-editorial text-base font-normal">Chassis & Surface Dimensions</h3>
             </div>
             <span className="text-[9px] font-mono text-[#73675e] dark:text-[#9e9086]">
@@ -341,12 +368,12 @@ export const CustomiseAdStudio: React.FC<CustomiseAdStudioProps> = ({
         </section>
 
         {/* =========================================================================
-            § 02 Hero Imagery & Visual Asset
+            02 Hero Imagery & Visual Asset
            ========================================================================= */}
         <section className="space-y-3">
           <div className="flex items-center justify-between pb-1.5 border-b border-[#e2dad2] dark:border-[#262320]">
             <div className="flex items-baseline space-x-2">
-              <span className="text-[10px] font-mono font-bold text-[#e14b2d]">§ 02</span>
+              <span className="text-[10px] font-mono font-bold text-[#e14b2d]">02</span>
               <h3 className="font-editorial text-base font-normal">Hero Imagery & Visual Asset</h3>
             </div>
             {/* Mode Switcher */}
@@ -411,10 +438,54 @@ export const CustomiseAdStudio: React.FC<CustomiseAdStudioProps> = ({
             </div>
           </div>
 
+          {/* Upload from Device / Computer (Zero CORS, 100% Reliable) */}
+          <div className="p-3 border border-dashed border-[#e14b2d]/40 rounded-xs bg-[#e14b2d]/5 dark:bg-[#e14b2d]/10 space-y-2">
+            <div className="flex items-center justify-between">
+              <label className="text-[10px] font-mono uppercase tracking-wider text-[#e14b2d] font-bold flex items-center gap-1.5">
+                <Upload className="w-3.5 h-3.5" />
+                <span>Upload from Device (Computer / Files)</span>
+              </label>
+            </div>
+
+            <input
+              type="file"
+              ref={fileInputRef}
+              accept="image/*"
+              onChange={handleFileUpload}
+              className="hidden"
+            />
+
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                className="flex-1 py-2 px-3 bg-white dark:bg-[#181513] border border-[#d6ccc2] dark:border-[#332f2b] hover:border-[#e14b2d] text-[#141210] dark:text-[#f5ede4] rounded-xs text-[11px] font-mono font-bold flex items-center justify-center gap-2 transition-all cursor-pointer shadow-2xs hover:bg-[#e14b2d] hover:text-white"
+              >
+                <ImageIcon className="w-3.5 h-3.5" />
+                <span>Choose Image from Explorer...</span>
+              </button>
+            </div>
+
+            {params.heroImageUrl && params.heroImageUrl.startsWith('data:') && (
+              <div className="flex items-center justify-between text-[9px] font-mono text-emerald-600 dark:text-emerald-400 pt-1">
+                <span className="flex items-center gap-1 font-semibold">
+                  <CheckCircle2 className="w-3 h-3" /> Local photo loaded cleanly
+                </span>
+                <button
+                  type="button"
+                  onClick={() => update('heroImageUrl', '')}
+                  className="text-[#73675e] dark:text-[#9e9086] hover:text-[#e14b2d] underline cursor-pointer"
+                >
+                  Clear Photo
+                </button>
+              </div>
+            )}
+          </div>
+
           {/* Custom Image URL Input */}
           <div className="space-y-1">
             <label className="text-[9px] font-mono uppercase tracking-wider text-[#554339] dark:text-[#9e9086] block font-semibold">
-              Custom Image URL (Unsplash / Direct Web Link)
+              Or Web Image URL (Unsplash / CDN / Direct Link)
             </label>
             <input
               type="text"
@@ -430,12 +501,12 @@ export const CustomiseAdStudio: React.FC<CustomiseAdStudioProps> = ({
         </section>
 
         {/* =========================================================================
-            § 03 Typography & Editorial Narrative
+            03 Typography & Editorial Narrative
            ========================================================================= */}
         <section className="space-y-3">
           <div className="flex items-center justify-between pb-1.5 border-b border-[#e2dad2] dark:border-[#262320]">
             <div className="flex items-baseline space-x-2">
-              <span className="text-[10px] font-mono font-bold text-[#e14b2d]">§ 03</span>
+              <span className="text-[10px] font-mono font-bold text-[#e14b2d]">03</span>
               <h3 className="font-editorial text-base font-normal">Typography & Editorial Narrative</h3>
             </div>
           </div>
@@ -479,12 +550,12 @@ export const CustomiseAdStudio: React.FC<CustomiseAdStudioProps> = ({
         </section>
 
         {/* =========================================================================
-            § 04 Feature Badges & Metadata Tags
+            04 Feature Badges & Metadata Tags
            ========================================================================= */}
         <section className="space-y-3">
           <div className="flex items-center justify-between pb-1.5 border-b border-[#e2dad2] dark:border-[#262320]">
             <div className="flex items-baseline space-x-2">
-              <span className="text-[10px] font-mono font-bold text-[#e14b2d]">§ 04</span>
+              <span className="text-[10px] font-mono font-bold text-[#e14b2d]">04</span>
               <h3 className="font-editorial text-base font-normal">Feature Badges & Spec Pills</h3>
             </div>
           </div>
@@ -542,12 +613,12 @@ export const CustomiseAdStudio: React.FC<CustomiseAdStudioProps> = ({
         </section>
 
         {/* =========================================================================
-            § 05 Acquisition Pricing & CTA Action
+            05 Acquisition Pricing & CTA Action
            ========================================================================= */}
         <section className="space-y-3">
           <div className="flex items-center justify-between pb-1.5 border-b border-[#e2dad2] dark:border-[#262320]">
             <div className="flex items-baseline space-x-2">
-              <span className="text-[10px] font-mono font-bold text-[#e14b2d]">§ 05</span>
+              <span className="text-[10px] font-mono font-bold text-[#e14b2d]">05</span>
               <h3 className="font-editorial text-base font-normal">Acquisition Pricing & CTA Action</h3>
             </div>
           </div>
@@ -615,12 +686,12 @@ export const CustomiseAdStudio: React.FC<CustomiseAdStudioProps> = ({
         </section>
 
         {/* =========================================================================
-            § 06 Chromatic Accent & Finish
+            06 Chromatic Accent & Finish
            ========================================================================= */}
         <section className="space-y-3 pb-4">
           <div className="flex items-center justify-between pb-1.5 border-b border-[#e2dad2] dark:border-[#262320]">
             <div className="flex items-baseline space-x-2">
-              <span className="text-[10px] font-mono font-bold text-[#e14b2d]">§ 06</span>
+              <span className="text-[10px] font-mono font-bold text-[#e14b2d]">06</span>
               <h3 className="font-editorial text-base font-normal">Chromatic Accent & Finish</h3>
             </div>
             <div className="flex items-center space-x-1.5">
@@ -657,6 +728,29 @@ export const CustomiseAdStudio: React.FC<CustomiseAdStudioProps> = ({
             })}
           </div>
         </section>
+      </div>
+
+      {/* =========================================================================
+          Bottom Action Footer: Save Changes & Cancel
+         ========================================================================= */}
+      <div className="p-4 border-t border-[#e2dad2] dark:border-[#262320] bg-[#f5efe8]/95 dark:bg-[#141210]/95 backdrop-blur-md sticky bottom-0 z-20 flex items-center justify-between gap-3 shadow-lg shrink-0">
+        <button
+          id="btn-studio-cancel"
+          onClick={onCancel || onClose}
+          className="flex-1 py-2.5 px-4 rounded-lg border border-[#d6ccc2] dark:border-[#332f2b] bg-white/80 dark:bg-[#1a1715] text-[#5e534c] dark:text-[#c4b8ad] hover:text-[#141210] dark:hover:text-white text-xs font-mono uppercase tracking-wider font-semibold flex items-center justify-center space-x-1.5 transition-all cursor-pointer hover:bg-white dark:hover:bg-[#221e1a] shadow-2xs"
+        >
+          <X className="w-3.5 h-3.5" />
+          <span>Cancel</span>
+        </button>
+
+        <button
+          id="btn-studio-save"
+          onClick={onSave || onClose}
+          className="flex-1 py-2.5 px-4 rounded-lg border border-[#e14b2d] bg-[#e14b2d] hover:bg-[#c93e22] text-white text-xs font-mono uppercase tracking-wider font-bold flex items-center justify-center space-x-1.5 transition-all cursor-pointer shadow-md active:scale-98"
+        >
+          <Check className="w-3.5 h-3.5" />
+          <span>Save Changes</span>
+        </button>
       </div>
     </div>
   );
