@@ -3,9 +3,9 @@
 ## 1. Executive Summary & Design Philosophy
 
 Traditional responsive web design relies heavily on CSS media queries (`@media (max-width: 768px)`), CSS flex-wrap, or hardcoded lookup tables (`if (surface === "mobile") return LayoutA`). While effective for standard websites, this approach breaks down in programmatic multi-surface advertising where:
-1. Surfaces vary drastically in **aspect ratios** ($0.56:1$ tall portrait to $7.68:1$ ultra-wide broadcast) rather than just linear viewport widths.
-2. Surfaces impose **hard physical constraints** (e.g. broadcast 10-foot viewing distances requiring $\ge 32\text{px}$ text, retail kiosks requiring $\ge 60\text{px}$ touch targets).
-3. Space constraints require **intelligent priority-based element degradation** (e.g. dropping branding logos and secondary badges) rather than clipping content or overflowing viewport bounds.
+1. Surfaces vary drastically in **aspect ratios** ($0.46:1$ tall portrait to $6:1$ ultra-wide ribbon) rather than just linear viewport widths.
+2. Surfaces impose **hard physical constraints** (e.g. broadcast 10-foot viewing distances requiring $\ge 20\text{px}$ to $\ge 32\text{px}$ text, retail kiosks requiring $\ge 60\text{px}$ touch targets).
+3. Space constraints require **intelligent priority-based element degradation** (e.g. dropping secondary badges and promotional tags) rather than clipping content or overflowing viewport bounds.
 
 The **Flam Adaptive Layout Engine** solves this by implementing a **pure TypeScript, deterministic, constraint-based layout engine** that separates layout resolution from visual rendering.
 
@@ -29,8 +29,8 @@ The **Flam Adaptive Layout Engine** solves this by implementing a **pure TypeScr
                  ┌───────────────┴───────────────┐
                  ▼                               ▼
      ┌───────────────────────┐       ┌───────────────────────┐
-     │   DOM / CSS Backend   │       │   Canvas 2D Backend   │
-     │  (Fluid Spring Anim)  │       │ (60 FPS Hardware Accel)│
+     │   DOM / CSS Backend   │       │   Export & Code Gen   │
+     │  (Fluid Spring Anim)  │       │ (Clean SVG + React JSX)│
      └───────────────────────┘       └───────────────────────┘
 ```
 
@@ -38,7 +38,7 @@ The **Flam Adaptive Layout Engine** solves this by implementing a **pure TypeScr
 1. **Spec Definition Layer (`src/spec.ts`)**: Independent of surface, device, or screen. Expresses pure content intent, roles, and priority ranks ($1 \dots 5$).
 2. **Surface Constraint Layer (`src/surfaces.ts`)**: Captures real physical parameters (dimensions, safe-area insets, viewing distance, touch modality, min tap target, min text size).
 3. **Constraint Solver Subsystem (`src/engine/`)**: A pure mathematical solver that evaluates spatial budgets, executes text fitting, runs progressive degradation cascades, and audits collision bounds.
-4. **Rendering Backends (`src/render-dom.tsx`, `src/render-canvas.ts`)**: Pure rendering consumers that take `ResolvedLayout` and draw it without executing any layout logic.
+4. **Interactive UI & Customisation Studio (`src/components/`, `src/App.tsx`)**: Reactive workbench providing real-time parameter tweaking, live telemetry diagnostics, and production asset export without altering solver internals.
 
 > **Extensibility Proof**:
 > - Adding a new surface profile requires **zero changes** to the solver algorithm or renderers.
@@ -82,7 +82,7 @@ Let elements $E = \{e_1, e_2, \dots, e_n\}$ have priorities $P(e_i) \in \{1, 2, 
 When candidate total required volume $V_{\text{req}} > \Omega_{\text{safe}}$, the solver steps through the degradation stages $\Delta_0 \to \Delta_7$:
 
 ```
-Stage 0 (Optimal: 100% Margins, All Active)
+Stage 0 (Optimal: 100% Margins, All Elements Active)
   │ (If Overflows)
   ▼
 Stage 1 (Compress Spacing: Gaps * 0.75, Padding * 0.8)
@@ -94,10 +94,10 @@ Stage 2 (Font Tightening: Font Scale * 0.85)
 Stage 3 (Hero Image Compression: Hero Scale * 0.65)
   │ (If Overflows)
   ▼
-Stage 4 (Text Truncation: Subtext truncated, Badges dropped)
+Stage 4 (Text Truncation: Subtext truncated, Badges compressed)
   │ (If Overflows)
   ▼
-Stage 5 (Drop Priority 3+: Branding Logo & Badges Dropped)
+Stage 5 (Drop Priority 3+: Secondary Badges Dropped)
   │ (If Overflows)
   ▼
 Stage 6 (Drop Priority 2: Price Sub-Labels Dropped)
@@ -130,8 +130,8 @@ If any intersection or boundary violation occurs, it is flagged in `audit.collis
 - **Answer**: The solver inspected `surface.minTapTarget = 60` and `surface.touchOnly = true`. During Pass 1, the action button height constraint was clamped:
   $$\text{btnHeight} = \max(\text{surface.minTapTarget}, \text{baseHeight}) = \max(60, 48) = 60\text{px}$$
 
-### Scenario 2: "Why did the Broadcast Lower-Third text scale up to 32px?"
-- **Answer**: The broadcast profile specifies `viewingDistance: "far"` and `minTextSize: 32`. Pass 1 applied the far-viewing multiplier $\mu_{\text{view}} = 1.65$ and clamped the font size to $\ge 32\text{px}$ to guarantee 10-foot viewing legibility.
+### Scenario 2: "Why did the Broadcast Lower-Third text scale up significantly?"
+- **Answer**: The broadcast profile specifies `viewingDistance: "far"` and `minTextSize: 20` (or `32` in far tests). Pass 1 applied the far-viewing multiplier $\mu_{\text{view}} = 1.65$ and clamped the font size to guarantee 10-foot viewing legibility.
 
 ### Scenario 3: "How does the engine handle a brand new 5th surface provided live?"
 - **Answer**: The engine computes continuous aspect ratio $AR = W / H$ and available safe area. It selects the structural strategy $\Psi(AR)$ and runs the 8-stage degradation search. No new code or surface dictionary entries are required.
