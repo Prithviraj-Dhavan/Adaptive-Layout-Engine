@@ -42,11 +42,11 @@ export function createElement<TContent extends ElementContent>(
 // ---------------------------------------------------------------------------
 
 /**
- * Flagship Showcase 1: Palmo Pure Coconut Water (Reference: https://www.palmo.co.in/)
+ * Showcase 1: Pure Coconut Hydration
  */
-export const palmoCoconutSpec: AdSpec = defineAd({
-  id: 'palmo-pure-coconut',
-  name: '🌴 Palmo Pure Coconut Water',
+export const organicCoconutSpec: AdSpec = defineAd({
+  id: 'pure-organic-coconut',
+  name: 'Pure Coconut Water',
   campaign: 'Paradise In Every Sip 2026',
   theme: {
     primaryColor: '#121A15',      // Forest Obsidian
@@ -68,7 +68,7 @@ export const palmoCoconutSpec: AdSpec = defineAd({
       content: {
         id: 'brand-logo',
         src: 'https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?auto=format&fit=crop&w=240&q=80',
-        alt: 'PALMO COCONUT CO.',
+        alt: 'ORGANIC BEVERAGE CO.',
       },
       constraints: {
         minWidth: 80,
@@ -89,7 +89,7 @@ export const palmoCoconutSpec: AdSpec = defineAd({
       priority: 3,
       content: {
         id: 'promo-badge',
-        text: '🌴 100% RAW & COLD-PRESSED',
+        text: '100% RAW & COLD-PRESSED',
         variant: 'pill',
       },
       constraints: {
@@ -139,7 +139,7 @@ export const palmoCoconutSpec: AdSpec = defineAd({
       content: {
         id: 'product-image',
         src: 'https://images.unsplash.com/photo-1535585209827-a15fcdbc4c2d?auto=format&fit=crop&w=800&q=80',
-        alt: 'Palmo 100% Raw Cold-Pressed Coconut',
+        alt: '100% Raw Cold-Pressed Coconut Water',
         aspectRatio: 1.0,
       },
       constraints: {
@@ -195,7 +195,7 @@ export const palmoCoconutSpec: AdSpec = defineAd({
         label: 'Discover Flavors',
         sublabel: 'Cold Delivered in 24h',
         variant: 'primary',
-        actionUrl: 'https://www.palmo.co.in/flavours',
+        actionUrl: 'https://example.com/flavours',
       },
       constraints: {
         minWidth: 130,
@@ -218,11 +218,11 @@ export const palmoCoconutSpec: AdSpec = defineAd({
 });
 
 /**
- * Flagship Showcase 2: Palmo Golden Pineapple Infusion
+ * Showcase 2: Golden Pineapple Infusion
  */
-export const palmoPineappleSpec: AdSpec = defineAd({
-  id: 'palmo-golden-pineapple',
-  name: '🍍 Palmo Golden Pineapple',
+export const goldenPineappleSpec: AdSpec = defineAd({
+  id: 'golden-pineapple-infusion',
+  name: 'Golden Pineapple Infusion',
   campaign: 'Sun-Drenched Hydration 2026',
   theme: {
     primaryColor: '#B45309',
@@ -244,7 +244,7 @@ export const palmoPineappleSpec: AdSpec = defineAd({
       content: {
         id: 'brand-logo',
         src: 'https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?auto=format&fit=crop&w=240&q=80',
-        alt: 'PALMO COCONUT CO.',
+        alt: 'ORGANIC BEVERAGE CO.',
       },
       constraints: { minWidth: 80, maxWidth: 180, minHeight: 24, maxHeight: 44, allowDrop: true },
       styles: { borderRadius: 8 },
@@ -256,7 +256,7 @@ export const palmoPineappleSpec: AdSpec = defineAd({
       priority: 3,
       content: {
         id: 'promo-badge',
-        text: '🍍 REAL PINEAPPLE INFUSION',
+        text: 'REAL PINEAPPLE INFUSION',
         variant: 'pill',
       },
       constraints: { minWidth: 140, maxWidth: 240, minHeight: 24, maxHeight: 36, allowDrop: true },
@@ -289,7 +289,7 @@ export const palmoPineappleSpec: AdSpec = defineAd({
       content: {
         id: 'product-image',
         src: 'https://images.unsplash.com/photo-1550258987-190a2d41a8ba?auto=format&fit=crop&w=800&q=80',
-        alt: 'Palmo Golden Pineapple Coconut Water',
+        alt: 'Golden Pineapple Coconut Water',
         aspectRatio: 1.0,
       },
       constraints: { minWidth: 80, maxWidth: 600, minHeight: 80, maxHeight: 600, allowDrop: false },
@@ -334,11 +334,11 @@ export const palmoPineappleSpec: AdSpec = defineAd({
 });
 
 /**
- * Flagship Showcase 3: Palmo Ruby Watermelon Hydration
+ * Showcase 3: Ruby Watermelon Hydration
  */
-export const palmoWatermelonSpec: AdSpec = defineAd({
-  id: 'palmo-ruby-watermelon',
-  name: '🍉 Palmo Ruby Watermelon',
+export const rubyWatermelonSpec: AdSpec = defineAd({
+  id: 'ruby-watermelon-hydration',
+  name: 'Ruby Watermelon Hydration',
   campaign: 'Crisp Summer Refreshment 2026',
   theme: {
     primaryColor: '#BE123C',
@@ -360,7 +360,7 @@ export const palmoWatermelonSpec: AdSpec = defineAd({
       content: {
         id: 'brand-logo',
         src: 'https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?auto=format&fit=crop&w=240&q=80',
-        alt: 'PALMO COCONUT CO.',
+        alt: 'ORGANIC BEVERAGE CO.',
       },
       constraints: { minWidth: 80, maxWidth: 180, minHeight: 24, maxHeight: 44, allowDrop: true },
       styles: { borderRadius: 8 },
@@ -372,7 +372,7 @@ export const palmoWatermelonSpec: AdSpec = defineAd({
       priority: 3,
       content: {
         id: 'promo-badge',
-        text: '🍉 48 KCL • 0 GM SUGAR',
+        text: '48 KCL • 0 GM SUGAR',
         variant: 'pill',
       },
       constraints: { minWidth: 140, maxWidth: 240, minHeight: 24, maxHeight: 36, allowDrop: true },
@@ -405,7 +405,7 @@ export const palmoWatermelonSpec: AdSpec = defineAd({
       content: {
         id: 'product-image',
         src: 'https://images.unsplash.com/photo-1587049352846-4a222e784d38?auto=format&fit=crop&w=800&q=80',
-        alt: 'Palmo Ruby Watermelon Coconut Water',
+        alt: 'Ruby Watermelon Hydration Water',
         aspectRatio: 1.0,
       },
       constraints: { minWidth: 80, maxWidth: 600, minHeight: 80, maxHeight: 600, allowDrop: false },
@@ -452,11 +452,11 @@ export const palmoWatermelonSpec: AdSpec = defineAd({
 /**
  * Spec 4: Flam Nebula XR Pro Headphones
  */
-export const defaultAdSpec: AdSpec = palmoCoconutSpec;
+export const defaultAdSpec: AdSpec = organicCoconutSpec;
 
 export const flamNebulaSpec: AdSpec = defineAd({
   id: 'flam-nebula-xr',
-  name: '⚡ Flam Nebula XR Spatial Audio',
+  name: 'Flam Nebula XR Spatial Audio',
   campaign: 'Spatial Audio Launch 2026',
   theme: {
     primaryColor: '#6366F1',
@@ -498,7 +498,7 @@ export const flamNebulaSpec: AdSpec = defineAd({
       priority: 3,
       content: {
         id: 'promo-badge',
-        text: '⚡ NEW SPATIAL GEN-3',
+        text: 'NEW SPATIAL GEN-3',
         variant: 'pill',
       },
       constraints: {
@@ -625,7 +625,7 @@ export const flamNebulaSpec: AdSpec = defineAd({
  */
 export const sneakerAdSpec: AdSpec = defineAd({
   id: 'cyber-runner-sneaker',
-  name: '👟 AeroVelocity Kinetic Sneaker',
+  name: 'AeroVelocity Kinetic Sneaker',
   campaign: 'Urban Velocity Q3',
   theme: {
     primaryColor: '#F59E0B',
@@ -730,7 +730,7 @@ export const sneakerAdSpec: AdSpec = defineAd({
  */
 export const droneAdSpec: AdSpec = defineAd({
   id: 'flam-sky-drone',
-  name: '🛸 SkyFalcon 8K Cinematic Drone',
+  name: 'SkyFalcon 8K Cinematic Drone',
   campaign: 'Aerial Creators 2026',
   theme: {
     primaryColor: '#06B6D4',
@@ -764,7 +764,7 @@ export const droneAdSpec: AdSpec = defineAd({
       priority: 3,
       content: {
         id: 'promo-badge',
-        text: '🎥 8K 120FPS HDR',
+        text: '8K 120FPS HDR',
         variant: 'pill',
       },
       constraints: { minWidth: 100, maxWidth: 180, minHeight: 22, maxHeight: 32, allowDrop: true },
@@ -851,8 +851,8 @@ export const droneAdSpec: AdSpec = defineAd({
 
 export const auraAcousticSpec: AdSpec = defineAd({
   id: 'aura-acoustic-perfection',
-  name: '🎧 Aura Acoustic Exhibit',
-  campaign: 'BIENNALE MONOGRAPH VOL. IV',
+  name: 'Nike Kinetic Velocity',
+  campaign: 'NIKE AIR RUNNER SERIES 2026',
   theme: {
     primaryColor: '#e14b2d',      // Vermilion
     secondaryColor: '#964407',    // Burnt Amber
@@ -889,8 +889,8 @@ export const auraAcousticSpec: AdSpec = defineAd({
       priority: 1,
       content: {
         id: 'creative-headline',
-        text: 'Acoustic Perfection.',
-        subtext: 'Adaptive 48dB Hybrid ANC with real-time room resonance & dynamic spatial masonry.',
+        text: 'Defy Gravity. Future.',
+        subtext: 'Ultra-responsive ZoomX foam with carbon fiber flyplate & adaptive kinetic propulsion.',
         maxLines: 2,
       },
       constraints: {
@@ -911,8 +911,8 @@ export const auraAcousticSpec: AdSpec = defineAd({
       priority: 2,
       content: {
         id: 'product-hero',
-        src: 'https://images.unsplash.com/photo-1546435770-a3e426bf472b?auto=format&fit=crop&w=800&q=80',
-        alt: 'Aura Monolith Acoustic Titanium Headphone',
+        src: 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&w=800&q=80',
+        alt: 'Kinetic Velocity Crimson Sneaker',
         aspectRatio: 1.0,
       },
       constraints: {
@@ -935,9 +935,9 @@ export const auraAcousticSpec: AdSpec = defineAd({
       priority: 3,
       content: {
         id: 'feature-badges',
-        text: '48dB ANC • TI-DRIVER • LOSSLESS',
+        text: 'ZOOMX FOAM • CARBON-PLATE • ULTRA-LIGHT',
       },
-      constraints: { minWidth: 140, maxWidth: 300, minHeight: 24, maxHeight: 36, allowDrop: true },
+      constraints: { minWidth: 140, maxWidth: 320, minHeight: 24, maxHeight: 36, allowDrop: true },
       styles: {
         textColor: '#e14b2d',
       },
@@ -949,10 +949,10 @@ export const auraAcousticSpec: AdSpec = defineAd({
       priority: 4,
       content: {
         id: 'offer-price',
-        currency: '$',
-        amount: '349',
-        originalAmount: '$429',
-        discountPercentage: 'ÉDITION LIMITÉE',
+        currency: '₹',
+        amount: '12,999',
+        originalAmount: '₹17,995',
+        discountPercentage: 'LIMITED DROP',
       },
       constraints: { minWidth: 90, maxWidth: 200, minHeight: 28, maxHeight: 48, allowDrop: true },
       styles: { textColor: '#ffffff', fontWeight: 'bold' },
@@ -971,7 +971,7 @@ export const auraAcousticSpec: AdSpec = defineAd({
       styles: {
         backgroundColor: '#e14b2d',
         textColor: '#fffdfa',
-        borderRadius: 0,
+        borderRadius: 14,
         fontWeight: 'bold',
       },
     },
@@ -980,8 +980,8 @@ export const auraAcousticSpec: AdSpec = defineAd({
 
 export const sampleAdSpecs: AdSpec[] = [
   auraAcousticSpec,
-  palmoCoconutSpec,
-  palmoPineappleSpec,
-  palmoWatermelonSpec,
+  organicCoconutSpec,
+  goldenPineappleSpec,
+  rubyWatermelonSpec,
 ];
 
