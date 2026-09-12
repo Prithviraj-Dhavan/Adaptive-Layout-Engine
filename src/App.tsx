@@ -2,9 +2,14 @@ import { useState, useRef, useEffect, useMemo } from 'react';
 import { sampleAdSpecs } from './spec';
 import { surfaces as defaultSurfaces, createCustomSurface } from './surfaces';
 import { resolveLayout } from './resolver';
-import type { AdSpec, SurfaceProfile } from './types';
+import type { AdSpec, SurfaceProfile, Priority } from './types';
 import { CustomiseAdStudio, defaultCustomParams, type CustomAdParams } from './components/CustomiseAdStudio';
-import { Sliders } from 'lucide-react';
+import { ExportAdModal } from './components/ExportAdModal';
+import { Sliders, Download, GripVertical, ArrowUp, ArrowDown, Sparkles } from 'lucide-react';
+import confetti from 'canvas-confetti';
+
+export type PriorityKey = 'headline' | 'hero' | 'badges' | 'price' | 'cta';
+const DEFAULT_PRIORITY_KEYS: PriorityKey[] = ['headline', 'hero', 'badges', 'price', 'cta'];
 
 // Specimen plate configurations mapping to surface dimensions
 interface SpecimenConfig {
@@ -92,6 +97,9 @@ const baseSpecimens: SpecimenConfig[] = [
 /**
  * Automatically determine the specimen plate ratio best matched to the user's active device / screen aspect ratio
  */
+/**
+ * Automatically determine the specimen plate ratio best matched to the user's active device / screen aspect ratio
+ */
 function getOptimalPlateForViewport(width: number, height: number): string {
   const ar = width / Math.max(1, height);
   // 1. Ultra-wide screens / ribbon displays (AR >= 2.6) -> Plate III: Broadcast Ribbon (~6:1)
@@ -106,7 +114,7 @@ function getOptimalPlateForViewport(width: number, height: number): string {
 
 export function App() {
   const [specs] = useState<AdSpec[]>(sampleAdSpecs);
-  const [activeSpecId, setActiveSpecId] = useState<string>(sampleAdSpecs[0].id);
+  const [activeSpecId] = useState<string>(sampleAdSpecs[0].id);
   const [activePlateKey, setActivePlateKey] = useState<string>(() => {
     if (typeof window !== 'undefined') {
       return getOptimalPlateForViewport(window.innerWidth, window.innerHeight);
@@ -115,7 +123,7 @@ export function App() {
   });
   const [isAutoDeviceMode, setIsAutoDeviceMode] = useState<boolean>(true);
   const [cameraMode, setCameraMode] = useState<'2d' | '3d'>('2d');
-  const [isDarkMode, setIsDarkMode] = useState<boolean>(true);
+  const [isDarkMode, setIsDarkMode] = useState<boolean>(false);
   const [isTelemetryOpen, setIsTelemetryOpen] = useState<boolean>(false);
   const [isMobileFolioOpen, setIsMobileFolioOpen] = useState<boolean>(false);
 
@@ -162,9 +170,38 @@ export function App() {
     };
   }, []);
 
-  // Customise Your Ad Parameters State
+  // Customise Your Ad Parameters State: committed state + staged draft state
   const [customParams, setCustomParams] = useState<CustomAdParams>(defaultCustomParams);
+  const [draftParams, setDraftParams] = useState<CustomAdParams>(defaultCustomParams);
   const [isCustomStudioOpen, setIsCustomStudioOpen] = useState<boolean>(false);
+  const [isExportModalOpen, setIsExportModalOpen] = useState<boolean>(false);
+  const studioSnapshotRef = useRef<CustomAdParams>(defaultCustomParams);
+
+  const handleOpenStudio = () => {
+    studioSnapshotRef.current = { ...customParams };
+    setDraftParams({ ...customParams });
+    setActivePlateKey('custom');
+    setIsAutoDeviceMode(false);
+    setIsCustomStudioOpen(true);
+  };
+
+  const handleSaveStudio = () => {
+    setCustomParams({ ...draftParams });
+    studioSnapshotRef.current = { ...draftParams };
+    setIsCustomStudioOpen(false);
+  };
+
+  const handleCancelStudio = () => {
+    setDraftParams({ ...studioSnapshotRef.current });
+    setIsCustomStudioOpen(false);
+    setIsAutoDeviceMode(true);
+    if (typeof window !== 'undefined') {
+      setActivePlateKey(getOptimalPlateForViewport(window.innerWidth, window.innerHeight));
+    }
+  };
+
+  // Dynamic parameters: live staged draft when studio drawer is open, saved state otherwise
+  const activeCustomParams = isCustomStudioOpen ? draftParams : customParams;
 
   // 3D Orbit Drag State
   const [rotX, setRotX] = useState<number>(0);
@@ -178,21 +215,16 @@ export function App() {
       if (s.key === 'custom') {
         return {
           ...s,
-          width: customParams.width,
-          height: customParams.height,
-          notch: customParams.notch,
-          borderRadius: `${customParams.borderRadius}px`,
-          dimensionsText: `${customParams.width} × ${customParams.height} px`,
+          width: activeCustomParams.width,
+          height: activeCustomParams.height,
+          notch: activeCustomParams.notch,
+          borderRadius: `${activeCustomParams.borderRadius}px`,
+          dimensionsText: `${activeCustomParams.width} × ${activeCustomParams.height} px`,
         };
       }
       return s;
     });
-  }, [customParams]);
-
-  // Active Ad Spec
-  const activeSpec = useMemo(() => {
-    return specs.find((s) => s.id === activeSpecId) || specs[0];
-  }, [specs, activeSpecId]);
+  }, [activeCustomParams]);
 
   // Active Plate Configuration
   const activeSpecimen = useMemo(() => {
@@ -200,8 +232,63 @@ export function App() {
   }, [specimens, activePlateKey]);
 
   // Active surface geometry
-  const surfaceWidth = activePlateKey === 'custom' ? customParams.width : activeSpecimen.width;
-  const surfaceHeight = activePlateKey === 'custom' ? customParams.height : activeSpecimen.height;
+  const surfaceWidth = activePlateKey === 'custom' ? activeCustomParams.width : activeSpecimen.width;
+  const surfaceHeight = activePlateKey === 'custom' ? activeCustomParams.height : activeSpecimen.height;
+
+  // Interactive Priority Tree State (User can drag/reorder when desired)
+  const [priorityKeys, setPriorityKeys] = useState<PriorityKey[]>(DEFAULT_PRIORITY_KEYS);
+  const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
+  const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
+  const [priorityToast, setPriorityToast] = useState<string | null>(null);
+
+  const movePriorityItem = (fromIndex: number, toIndex: number) => {
+    if (toIndex < 0 || toIndex >= priorityKeys.length || fromIndex === toIndex) return;
+    const updated = [...priorityKeys];
+    const [moved] = updated.splice(fromIndex, 1);
+    updated.splice(toIndex, 0, moved);
+    setPriorityKeys(updated);
+
+    const nameMap: Record<PriorityKey, string> = {
+      cta: 'CTA Action',
+      headline: 'Headline',
+      hero: 'Product Hero',
+      badges: 'Feature Badges',
+      price: 'Offer Price',
+    };
+    setPriorityToast(`Prioritized ${nameMap[moved]} to Rank #${toIndex + 1}`);
+    setTimeout(() => setPriorityToast(null), 2500);
+  };
+
+  // Active Ad Spec with dynamically assigned priorities from active priority order
+  const activeSpec = useMemo<AdSpec>(() => {
+    const baseSpec = specs.find((s) => s.id === activeSpecId) || specs[0];
+    const priorityRankMap: Partial<Record<PriorityKey, Priority>> = {};
+    priorityKeys.forEach((key, idx) => {
+      priorityRankMap[key] = Math.min(5, Math.max(1, idx + 1)) as Priority;
+    });
+
+    const updatedElements = baseSpec.elements.map((el) => {
+      let key: PriorityKey | null = null;
+      if (el.role === 'action' || el.type === 'button') key = 'cta';
+      else if (el.role === 'primary' || el.type === 'text') key = 'headline';
+      else if (el.role === 'hero' || (el.type === 'image' && el.role !== 'branding')) key = 'hero';
+      else if (el.id === 'feature-badges' || el.type === 'badge') key = 'badges';
+      else if (el.type === 'price-tag' || el.id === 'offer-price') key = 'price';
+
+      if (key && priorityRankMap[key] !== undefined) {
+        return {
+          ...el,
+          priority: priorityRankMap[key]!,
+        };
+      }
+      return el;
+    });
+
+    return {
+      ...baseSpec,
+      elements: updatedElements,
+    };
+  }, [specs, activeSpecId, priorityKeys]);
 
   // Auto-fitting scale calculation for device chassis
   const autoScale = useMemo(() => {
@@ -230,13 +317,13 @@ export function App() {
     if (activePlateKey === 'square') return defaultSurfaces.retailKiosk;
 
     return createCustomSurface({
-      width: customParams.width,
-      height: customParams.height,
+      width: activeCustomParams.width,
+      height: activeCustomParams.height,
       name: 'Customise your Ad',
       minTapTarget: 44,
       minTextSize: 12,
     });
-  }, [activePlateKey, customParams]);
+  }, [activePlateKey, activeCustomParams]);
 
   // Solve layout via Pure TypeScript Engine
   const resolvedLayout = useMemo(() => {
@@ -347,11 +434,93 @@ export function App() {
   const ctaEl = resolvedLayout.elements.find((e) => e.role === 'action' || e.type === 'button');
   const badgeEl = resolvedLayout.elements.find((e) => e.role === 'badge' || e.type === 'badge');
 
-  const headlineText = headlineEl ? ((headlineEl.content as any)?.text || headlineEl.textLines?.join(' ') || 'Acoustic Perfection.') : 'Acoustic Perfection.';
-  const sublineText = headlineEl ? ((headlineEl.content as any)?.subtext || 'Adaptive 48dB Hybrid ANC with real-time room resonance & dynamic spatial masonry.') : 'Adaptive 48dB Hybrid ANC with real-time room resonance & dynamic spatial masonry.';
+  const headlineText = headlineEl ? ((headlineEl.content as any)?.text || headlineEl.textLines?.join(' ') || 'Defy Gravity. Future.') : 'Defy Gravity. Future.';
+  const sublineText = headlineEl ? ((headlineEl.content as any)?.subtext || 'Ultra-responsive ZoomX foam with carbon fiber flyplate & adaptive kinetic propulsion.') : 'Ultra-responsive ZoomX foam with carbon fiber flyplate & adaptive kinetic propulsion.';
   const ctaLabel = ctaEl ? ((ctaEl.content as any)?.label || 'Acquire Edition') : 'Acquire Edition';
-  const priceAmount = priceEl ? `${(priceEl.content as any)?.currency || '$'}${(priceEl.content as any)?.amount || '349'}` : '$349';
-  const originalPrice = priceEl ? ((priceEl.content as any)?.originalAmount || '$429') : '$429';
+  const priceAmount = priceEl ? `${(priceEl.content as any)?.currency || '₹'}${(priceEl.content as any)?.amount || '12,999'}` : '₹12,999';
+  const originalPrice = priceEl ? ((priceEl.content as any)?.originalAmount || '₹17,995') : '₹17,995';
+
+
+  // Dynamic Layout Decisions computed from active geometry and custom user priority ordering
+  const layoutDecisions = useMemo(() => {
+    const w = activeSurface.width;
+    const h = activeSurface.height;
+    const ar = w / h;
+    const isUltraWide = ar >= 3.0;
+    const isLandscape = ar >= 1.35 && ar < 3.0;
+    const isSquare = ar >= 0.85 && ar < 1.35;
+
+    const mode = isUltraWide ? 'ultraWide' : isLandscape ? 'landscape' : isSquare ? 'square' : 'vertical';
+
+    const metadataMap: Record<
+      PriorityKey,
+      {
+        element: string;
+        decisions: Record<string, { decision: string; status: string; accent?: boolean }>;
+      }
+    > = {
+      cta: {
+        element: 'CTA Action',
+        decisions: {
+          ultraWide: { decision: 'Right Lateral Wing', status: 'Anchored Right · X: Right-pinned', accent: true },
+          landscape: { decision: 'Left Column Anchor', status: 'Bottom Thumb Reach · 38px Height', accent: true },
+          square: { decision: 'Full-Width Bottom Target', status: '44px Conforming Tap Target', accent: true },
+          vertical: { decision: 'Bottom Thumb Reach', status: '44px Conforming · Primary CTA', accent: true },
+        },
+      },
+      headline: {
+        element: 'Headline',
+        decisions: {
+          ultraWide: { decision: 'Left Primary Zone', status: 'Single-line Serif · Left Aligned', accent: false },
+          landscape: { decision: 'Left Column Header', status: '2-Line Flow · 24px EB Garamond', accent: false },
+          square: { decision: 'Top Centered Hierarchy', status: 'Upper Grid Header', accent: false },
+          vertical: { decision: 'Upper Dominance', status: 'Prominent Display Hierarchy', accent: false },
+        },
+      },
+      hero: {
+        element: 'Product Hero',
+        decisions: {
+          ultraWide: { decision: 'Center Stage Visual', status: 'Clamped H: 65% · Fitted Aspect', accent: false },
+          landscape: { decision: 'Right Column Stage', status: 'Split 50% Canvas · Centered', accent: false },
+          square: { decision: 'Balanced Center Stage', status: 'Aspect-Preserved Hero Box', accent: false },
+          vertical: { decision: 'Center Stage Focal', status: 'Vertical-Weighted Hero Visual', accent: false },
+        },
+      },
+      badges: {
+        element: 'Feature Badges',
+        decisions: {
+          ultraWide: { decision: 'Micro Strip Mode', status: 'Suppressed for Ribbon Bandwidth', accent: false },
+          landscape: { decision: 'Under-Hero Pill Bar', status: '3-Chip Inline Cluster', accent: false },
+          square: { decision: 'Mid-Tier Pill Bar', status: 'Inline Metadata Strip', accent: false },
+          vertical: { decision: 'Inline Pill Bar', status: '3-Chip Specification Strip', accent: false },
+        },
+      },
+      price: {
+        element: 'Offer Price',
+        decisions: {
+          ultraWide: { decision: 'Inline Pre-CTA', status: 'Paired directly before Button', accent: false },
+          landscape: { decision: 'Left Column Pre-CTA', status: 'Stacked Price Baseline', accent: false },
+          square: { decision: 'Pre-CTA Lower Baseline', status: 'Dual Tier Pricing Anchor', accent: false },
+          vertical: { decision: 'Pre-CTA Anchor', status: 'Discount Paired with Edition Tag', accent: false },
+        },
+      },
+    };
+
+    return priorityKeys.map((key, idx) => {
+      const meta = metadataMap[key];
+      const info = meta.decisions[mode];
+      const priorityLabel = `P${idx + 1}`;
+      return {
+        key,
+        priority: priorityLabel,
+        element: meta.element,
+        decision: info.decision,
+        status: info.status,
+        accent: info.accent ?? false,
+        index: idx,
+      };
+    });
+  }, [activeSurface.width, activeSurface.height, priorityKeys]);
 
   return (
     <div className="h-full w-full bg-[#fbf8f4] dark:bg-[#0d0c0b] text-[#141210] dark:text-[#f5ede4] flex flex-col font-sans overflow-hidden select-none relative">
@@ -362,38 +531,23 @@ export function App() {
       </div>
 
       {/* MAIN BIENNALE WORKSPACE */}
-      <div className="flex-1 flex overflow-hidden relative bg-[#fbf8f4] dark:bg-[#0d0c0b]/40 z-10">
+      <div className={`flex-1 flex overflow-hidden relative bg-[#fbf8f4] dark:bg-[#0d0c0b]/40 ${isCustomStudioOpen ? 'z-40' : 'z-10'}`}>
         {/* DESKTOP LEFT FOLIO INDEX (CURATED EXHIBITION PLATES) */}
-        <aside className="hidden lg:flex lg:w-80 xl:w-96 border-r border-[#e2dad2] dark:border-[#262320] bg-[#f5efe8]/80 dark:bg-[#110f0e]/85 backdrop-blur-md flex-col justify-between p-6 md:p-8 shrink-0 z-20 overflow-y-auto">
+        <aside className={`hidden lg:flex lg:w-80 xl:w-96 border-r border-[#e2dad2] dark:border-[#262320] bg-[#f5efe8]/80 dark:bg-[#110f0e]/85 backdrop-blur-md flex-col justify-between p-6 md:p-8 shrink-0 overflow-y-auto transition-all duration-300 ${isCustomStudioOpen ? 'opacity-30 blur-[2px] pointer-events-none z-10' : 'z-20'}`}>
           <div>
             {/* Exhibition Title */}
             <div className="mb-6">
+              <div className="mb-2.5">
+                <span className="text-[9px] font-mono uppercase tracking-widest text-[#e14b2d] font-bold">STUDIO MONOLITH</span>
+              </div>
               <h1 className="font-editorial text-3xl md:text-4xl text-[#141210] dark:text-[#f5ede4] font-normal leading-[1.08]">
-                Adaptive Ad Layout <br />
-                <span className="italic text-[#e14b2d] font-light">Engine.</span>
+                Adaptive Layout <br />
+                <span className="italic text-[#e14b2d] font-light">Studio.</span>
               </h1>
               <p className="text-xs font-serif italic text-[#554339] dark:text-[#9e9086] mt-2 leading-relaxed">
                 Design once. Adapt everywhere. <br />
                 Intelligent layouts powered by constraints, not breakpoints.
               </p>
-            </div>
-
-            {/* Specimen Selector Pill */}
-            <div className="mb-4">
-              <label className="text-[9px] font-mono uppercase tracking-widest text-[#554339] dark:text-[#9e9086] block mb-1.5 font-bold">
-                Active Ad Specimen
-              </label>
-              <select
-                value={activeSpecId}
-                onChange={(e) => setActiveSpecId(e.target.value)}
-                className="w-full bg-white/70 dark:bg-[#1a1715] border border-[#e2dad2] dark:border-[#262320] rounded-sm px-3 py-2 text-xs font-editorial text-[#141210] dark:text-[#f5ede4] outline-none cursor-pointer"
-              >
-                {specs.map((s) => (
-                  <option key={s.id} value={s.id} className="bg-[#f5efe8] dark:bg-[#110f0e] text-[#141210] dark:text-[#f5ede4]">
-                    {s.name}
-                  </option>
-                ))}
-              </select>
             </div>
 
             {/* Specimen Plates Selector Header with Auto Sync */}
@@ -429,10 +583,11 @@ export function App() {
                   <div
                     key={specimen.key}
                     onClick={() => {
-                      setActivePlateKey(specimen.key);
-                      setIsAutoDeviceMode(false);
                       if (specimen.key === 'custom') {
-                        setIsCustomStudioOpen(true);
+                        handleOpenStudio();
+                      } else {
+                        setActivePlateKey(specimen.key);
+                        setIsAutoDeviceMode(false);
                       }
                     }}
                     className={`plate-item group cursor-pointer p-4 border-l-2 transition-all ${
@@ -470,7 +625,7 @@ export function App() {
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
-                            setIsCustomStudioOpen(true);
+                            handleOpenStudio();
                           }}
                           className="w-full py-1.5 px-3 bg-[#e14b2d] hover:bg-[#c93e22] text-white text-[10px] font-mono uppercase tracking-wider font-bold rounded-xs flex items-center justify-between transition-all cursor-pointer shadow-xs"
                         >
@@ -489,20 +644,19 @@ export function App() {
 
           {/* Footnote Monograph Colophon */}
           <div className="pt-6 border-t border-[#e2dad2] dark:border-[#262320] text-[11px] font-mono text-[#554339] dark:text-[#9e9086] space-y-1.5">
-            <div className="flex justify-between">
+            <div>
               <span>CURATORIAL DISPATCH</span>
-              <span className="text-[#141210] dark:text-[#f5ede4]">№ 882-CH</span>
             </div>
             <p className="font-editorial italic text-xs leading-relaxed text-[#73675e] dark:text-[#a1958b] pt-1">
-              “Every millimeter is an architectural declaration. Typography ceases to be passive text and becomes spatial masonry.”
+              “Every constraint is an opportunity. Every surface deserves its own perfect composition.”
             </p>
           </div>
         </aside>
 
         {/* CENTER EXHIBITION GALLERY: ROTATING PEDESTAL STAGE */}
-        <main className="flex-1 w-full relative flex flex-col justify-between p-3 sm:p-5 md:p-6 overflow-hidden">
+        <main className={`flex-1 w-full relative flex flex-col justify-between p-3 sm:p-5 md:p-6 overflow-hidden transition-all duration-300 ${isCustomStudioOpen ? 'lg:pr-[430px] xl:pr-[470px]' : ''}`}>
           {/* TOP CONTROLS ROW: FOLIO & 2D (Left) | CUSTOMISE, THEME, TELEMETRY (Right) */}
-          <div className="flex items-center justify-between gap-2 z-20 shrink-0 mb-2">
+          <div className={`flex items-center justify-between gap-2 shrink-0 mb-2 transition-all duration-300 ${isCustomStudioOpen ? 'opacity-30 blur-[1px] pointer-events-none z-10' : 'z-20'}`}>
             {/* Left Side: FOLIO & 2D / 3D Mode Toggle Group */}
             <div className="flex items-center space-x-2">
               {/* Mobile Folio Catalog Drawer Toggle */}
@@ -544,15 +698,12 @@ export function App() {
               </div>
             </div>
 
-            {/* Right Side: CUSTOMISE, THEME TOGGLE, TELEMETRY / HAMBURGER */}
+            {/* Right Side: CUSTOMISE, DOWNLOAD AD, THEME TOGGLE, TELEMETRY / HAMBURGER */}
             <div className="flex items-center space-x-2">
               {/* Customise Your Ad Button */}
               <button
                 id="btn-customise"
-                onClick={() => {
-                  setActivePlateKey('custom');
-                  setIsCustomStudioOpen(true);
-                }}
+                onClick={handleOpenStudio}
                 className={`h-8 px-3 sm:px-3.5 rounded-full border transition-all flex items-center space-x-1.5 cursor-pointer shadow-xs text-[9px] sm:text-[10px] font-mono uppercase tracking-wider font-semibold ${
                   activePlateKey === 'custom' || isCustomStudioOpen
                     ? 'border-[#e14b2d] bg-[#e14b2d] text-white font-bold'
@@ -562,6 +713,25 @@ export function App() {
               >
                 <Sliders className="w-3.5 h-3.5" />
                 <span>CUSTOMISE</span>
+              </button>
+
+              {/* Download / Export Prepared Ad Button */}
+              <button
+                id="btn-download-ad"
+                onClick={() => {
+                  setIsExportModalOpen(true);
+                  confetti({
+                    particleCount: 50,
+                    spread: 60,
+                    origin: { y: 0.15, x: 0.75 },
+                    colors: [activeCustomParams.accentColor || '#e14b2d', '#964407', '#ffffff'],
+                  });
+                }}
+                className="h-8 px-3 sm:px-3.5 rounded-full border border-[#141210] dark:border-stone-200 bg-[#141210] dark:bg-white text-white dark:text-[#141210] hover:bg-[#e14b2d] dark:hover:bg-[#e14b2d] dark:hover:text-white dark:hover:border-[#e14b2d] hover:border-[#e14b2d] transition-all flex items-center space-x-1.5 cursor-pointer shadow-xs text-[9px] sm:text-[10px] font-mono uppercase tracking-wider font-bold"
+                title="Download & Export Prepared Ad (PNG, HTML5, JSON)"
+              >
+                <Download className="w-3.5 h-3.5" />
+                <span>DOWNLOAD AD</span>
               </button>
 
               <div className="flex items-center p-0.5 sm:p-1 space-x-1 rounded-full border border-[#d6ccc2] dark:border-[#2b2622] bg-white/80 dark:bg-[#161311]/90 backdrop-blur-md shadow-xs">
@@ -613,7 +783,7 @@ export function App() {
           </div>
 
           {/* SECOND ROW: SPECIMEN PLATE BUTTONS (Down of top controls) */}
-          <div className="lg:hidden flex items-center gap-1.5 overflow-x-auto py-1 px-0.5 shrink-0 no-scrollbar mb-2">
+          <div className={`lg:hidden flex items-center gap-1.5 overflow-x-auto py-1 px-0.5 shrink-0 no-scrollbar mb-2 transition-all duration-300 ${isCustomStudioOpen ? 'opacity-30 blur-[1px] pointer-events-none' : ''}`}>
             {/* Clean attractive AUTO button without live dot */}
             <button
               id="btn-auto-sync"
@@ -639,10 +809,11 @@ export function App() {
                 <button
                   key={specimen.key}
                   onClick={() => {
-                    setActivePlateKey(specimen.key);
-                    setIsAutoDeviceMode(false);
                     if (specimen.key === 'custom') {
-                      setIsCustomStudioOpen(true);
+                      handleOpenStudio();
+                    } else {
+                      setActivePlateKey(specimen.key);
+                      setIsAutoDeviceMode(false);
                     }
                   }}
                   className={`px-2.5 py-1.5 text-[10px] font-mono whitespace-nowrap transition-all border shrink-0 rounded-xs cursor-pointer ${
@@ -671,7 +842,9 @@ export function App() {
             onTouchEnd={handleTouchEnd}
             onTouchCancel={handleTouchEnd}
             onDoubleClick={handleDoubleClick}
-            className={`flex-1 w-full h-full flex items-center justify-center relative select-none overflow-hidden touch-none ${
+            className={`flex-1 w-full h-full flex items-center justify-center relative select-none overflow-hidden touch-none transition-all duration-300 ${
+              isCustomStudioOpen ? 'z-40' : 'z-10'
+            } ${
               cameraMode === '3d' ? 'cursor-grab active:cursor-grabbing' : 'cursor-default'
             }`}
             style={{
@@ -682,11 +855,13 @@ export function App() {
             {/* HARDWARE SCULPTURAL CHASSIS (TITANIUM MONOLITH) */}
             <div
               id="device-chassis"
-              className="relative rounded-[48px] p-3.5 bg-gradient-to-b from-[#d8d1c6] via-[#c2b7a6] to-[#988c7c] dark:from-[#2a2622] dark:via-[#1c1917] dark:to-[#12100e] pedestal-shadow shrink-0"
+              className={`relative rounded-[48px] p-3.5 bg-gradient-to-b from-[#d8d1c6] via-[#c2b7a6] to-[#988c7c] dark:from-[#2a2622] dark:via-[#1c1917] dark:to-[#12100e] pedestal-shadow shrink-0 transition-all duration-300 ${
+                isCustomStudioOpen ? 'shadow-2xl ring-2 ring-[#e14b2d]/40' : ''
+              }`}
               style={{
                 width: `${surfaceWidth}px`,
                 height: `${surfaceHeight}px`,
-                borderRadius: activePlateKey === 'custom' ? `${customParams.borderRadius}px` : activeSpecimen.borderRadius,
+                borderRadius: activePlateKey === 'custom' ? `${activeCustomParams.borderRadius}px` : activeSpecimen.borderRadius,
                 transform: cameraMode === '2d' || (rotX === 0 && rotY === 0)
                   ? `scale(${autoScale})`
                   : `scale(${autoScale}) rotateX(${rotX}deg) rotateY(${rotY}deg)`,
@@ -699,18 +874,18 @@ export function App() {
               {/* Outer Titanium Bezel Stroke */}
               <div
                 className="absolute inset-0 border border-white/60 dark:border-white/10 pointer-events-none"
-                style={{ borderRadius: activePlateKey === 'custom' ? `${customParams.borderRadius}px` : activeSpecimen.borderRadius }}
+                style={{ borderRadius: activePlateKey === 'custom' ? `${activeCustomParams.borderRadius}px` : activeSpecimen.borderRadius }}
               />
 
               {/* Screen Vessel */}
               <div
                 className={`relative w-full h-full ${isDarkMode ? 'bg-[#fcf9f5]' : 'bg-[#0f0d0b]'} overflow-hidden flex flex-col shadow-inner transition-colors duration-300`}
                 style={{
-                  borderRadius: `calc(${activePlateKey === 'custom' ? `${customParams.borderRadius}px` : activeSpecimen.borderRadius} - 10px)`,
+                  borderRadius: `calc(${activePlateKey === 'custom' ? `${activeCustomParams.borderRadius}px` : activeSpecimen.borderRadius} - 10px)`,
                 }}
               >
-                {/* Monolith Acoustic Dynamic Pill Notch */}
-                {(activePlateKey === 'custom' ? customParams.notch : activeSpecimen.notch) && (
+                {/* Monolith Acoustic Dynamic Pill Notch (Only on sufficiently tall vertical displays) */}
+                {(activePlateKey === 'custom' ? activeCustomParams.notch : activeSpecimen.notch) && (activePlateKey === 'custom' ? activeCustomParams.height : activeSpecimen.height) >= 480 && (activePlateKey === 'custom' ? activeCustomParams.width / activeCustomParams.height : activeSpecimen.width / activeSpecimen.height) < 1.35 && (
                   <div
                     id="notch-container"
                     className="absolute top-2.5 left-1/2 -translate-x-1/2 h-5 w-24 bg-black rounded-full z-40 flex items-center justify-between px-2.5 border border-white/10 shadow-sm"
@@ -722,18 +897,51 @@ export function App() {
 
                 {/* AD SPECIMEN CONTENT: DYNAMIC ADAPTIVE SURFACE ENGINE */}
                 {(() => {
-                  const surfaceWidth = activePlateKey === 'custom' ? customParams.width : activeSpecimen.width;
-                  const surfaceHeight = activePlateKey === 'custom' ? customParams.height : activeSpecimen.height;
+                  const surfaceWidth = activePlateKey === 'custom' ? activeCustomParams.width : activeSpecimen.width;
+                  const surfaceHeight = activePlateKey === 'custom' ? activeCustomParams.height : activeSpecimen.height;
                   const ar = surfaceWidth / surfaceHeight;
                   const isUltraWide = ar >= 3.0;
                   const isSplitLandscape = ar >= 1.35 && ar < 3.0;
-                  const showSubline = surfaceHeight >= 240 && !isUltraWide;
-                  const titleFontSize = Math.min(32, Math.max(14, Math.min(surfaceWidth * 0.056, surfaceHeight * 0.075)));
-                  const heroSize = isUltraWide
-                    ? Math.min(90, Math.max(36, surfaceHeight * 0.52))
+                  
+                  // Spatial degradation regimes
+                  const isVeryCompactH = surfaceHeight < 390;
+                  const isCompactH = surfaceHeight < 520;
+                  const isVeryCompactW = surfaceWidth < 340;
+
+                  // Subline Visibility (Stage 4 Text Truncation / Drop)
+                  const showSubline = isUltraWide 
+                    ? surfaceHeight >= 190 
+                    : isSplitLandscape 
+                    ? surfaceHeight >= 270 
+                    : surfaceHeight >= 480;
+
+                  // Chips Visibility (Stage 5 Drop Badges / Chips)
+                  const showChips = isUltraWide
+                    ? surfaceHeight >= 160 && surfaceWidth >= 650
                     : isSplitLandscape
-                    ? Math.min(130, Math.max(48, surfaceHeight * 0.42))
-                    : Math.min(140, Math.max(48, Math.min(surfaceHeight * 0.28, surfaceWidth * 0.34)));
+                    ? surfaceHeight >= 240
+                    : surfaceHeight >= 420;
+
+                  // Dynamic Typography (Stage 2 Font Tightening & Scaling)
+                  const titleFontSize = isUltraWide
+                    ? Math.max(12, Math.min(surfaceHeight * 0.18, surfaceWidth * 0.035, 26))
+                    : isSplitLandscape
+                    ? Math.max(12, Math.min(surfaceWidth * 0.042, surfaceHeight * 0.065, isCompactH ? 20 : 28))
+                    : Math.max(12, Math.min(surfaceWidth * 0.052, surfaceHeight * 0.052, isVeryCompactW ? 14 : isVeryCompactH ? 16 : isCompactH ? 20 : 30));
+
+                  const hasNotch = (activePlateKey === 'custom' ? activeCustomParams.notch : activeSpecimen.notch) && surfaceHeight >= 480 && !isUltraWide && !isSplitLandscape;
+
+                  // Dynamic Hero Sizing with strict vertical & horizontal budgeting (Large & Proportional Hero Image)
+                  const verticalHeaderH = (hasNotch ? 28 : 6) + 16 + (titleFontSize * 2.1) + (showSubline ? 28 : 0);
+                  const verticalFooterH = isVeryCompactH ? 56 : isCompactH ? 68 : 88;
+                  const verticalOuterPad = isVeryCompactH ? 16 : isCompactH ? 24 : 36;
+                  const verticalAvailableMiddle = Math.max(20, surfaceHeight - verticalHeaderH - verticalFooterH - verticalOuterPad - (showChips ? 26 : 0));
+
+                  const heroSize = isUltraWide
+                    ? Math.max(36, Math.min(surfaceHeight * 0.82, surfaceWidth * 0.20, 135))
+                    : isSplitLandscape
+                    ? Math.max(48, Math.min(surfaceWidth * 0.38, (surfaceHeight - (showChips ? 50 : 20)) * 0.85, 260))
+                    : Math.max(36, Math.min(surfaceWidth * 0.65, verticalAvailableMiddle * 0.82, isVeryCompactH ? 70 : isCompactH ? 220 : 270));
 
                   // Dynamic Theme-Opposite Tokens for Inner Screen
                   const screenBgClass = isDarkMode ? 'bg-[#fcf9f5]' : 'bg-[#110e0c]';
@@ -745,77 +953,80 @@ export function App() {
                   const chipBgClass = isDarkMode ? 'border-[#d6ccc2] bg-[#f0eae1] text-[#423932]' : 'border-stone-700 bg-black/40 text-stone-300';
                   const specCodeBgClass = isDarkMode ? 'border-[#d6ccc2] bg-[#f0eae1] text-[#554339]' : 'border-stone-700 bg-transparent text-stone-300';
 
-                  const activeBadgeText = activePlateKey === 'custom'
-                    ? customParams.badgeText
-                    : badgeEl
-                    ? (badgeEl.content as any)?.text || 'SURFACE SPECIMEN № 01'
-                    : 'SURFACE SPECIMEN № 01';
+                  const hasCustomImage = Boolean(
+                    activeCustomParams.heroImageUrl &&
+                    (activeCustomParams.heroMode === 'image' || activeCustomParams.heroImageUrl.trim() !== '')
+                  );
 
-                  const activeSpecCode = activePlateKey === 'custom'
-                    ? customParams.specCode
-                    : activeSpec.id.toUpperCase().slice(0, 14);
+                  const activeBadgeText = activeCustomParams.badgeText || (badgeEl ? (badgeEl.content as any)?.text : 'SURFACE SPECIMEN № 01') || 'SURFACE SPECIMEN № 01';
+                  const activeSpecCode = activeCustomParams.specCode || activeSpec.id.toUpperCase().slice(0, 14);
+                  const activeAccent = activeCustomParams.accentColor || '#e14b2d';
+                  const activeBadgeColor = isDarkMode ? '#964407' : '#964407';
 
-                  const activeAccent = activePlateKey === 'custom' ? customParams.accentColor : '#e14b2d';
-                  const activeBadgeColor = activePlateKey === 'custom'
-                    ? customParams.accentColor
-                    : isDarkMode
-                    ? '#964407'
-                    : '#964407';
+                  const activeHeadlineMain = activeCustomParams.headline || (headlineText.includes('.') ? headlineText.split('.')[0] : headlineText);
+                  const activeHeadlineAccent = activeCustomParams.headlineAccent !== undefined ? activeCustomParams.headlineAccent : (headlineText.includes('.') ? headlineText.split('.')[1] || 'Perfection.' : '');
+                  const activeSublineText = activeCustomParams.subline || sublineText;
+                  const activePriceText = activeCustomParams.price ? `${activeCustomParams.currency}${activeCustomParams.price}` : priceAmount;
+                  const activeOriginalPrice = activeCustomParams.originalPrice ? `${activeCustomParams.currency}${activeCustomParams.originalPrice}` : originalPrice;
+                  const activeEdition = activeCustomParams.editionLabel || 'Édition Limitée';
+                  const activeCta = activeCustomParams.ctaLabel || ctaLabel;
 
-                  const activeHeadlineMain = activePlateKey === 'custom'
-                    ? customParams.headline
-                    : headlineText.includes('.')
-                    ? headlineText.split('.')[0]
-                    : headlineText;
-
-                  const activeHeadlineAccent = activePlateKey === 'custom'
-                    ? customParams.headlineAccent
-                    : headlineText.includes('.')
-                    ? headlineText.split('.')[1] || 'Perfection.'
-                    : '';
-
-                  const activeSublineText = activePlateKey === 'custom' ? customParams.subline : sublineText;
-                  const activePriceText = activePlateKey === 'custom' ? `${customParams.currency}${customParams.price}` : priceAmount;
-                  const activeOriginalPrice = activePlateKey === 'custom' ? `${customParams.currency}${customParams.originalPrice}` : originalPrice;
-                  const activeEdition = activePlateKey === 'custom' ? customParams.editionLabel : 'Édition Limitée';
-                  const activeCta = activePlateKey === 'custom' ? customParams.ctaLabel : ctaLabel;
-
-                  // Render Hero Visual Element
+                  // Render Hero Visual Element with sleek rounded borders on all screens
                   const renderHeroVisual = (size: number) => {
-                    const isCustomImg = activePlateKey === 'custom' && customParams.heroMode === 'image' && customParams.heroImageUrl;
-                    const isSpecImg = activePlateKey !== 'custom' && heroEl && (heroEl.content as any)?.src && activeSpecId !== 'aura-acoustic-perfection';
+                    const isCustomImg = hasCustomImage && activeCustomParams.heroMode === 'image';
+                    const isSpecImg = !isCustomImg && heroEl && (heroEl.content as any)?.src && activeSpecId !== 'aura-acoustic-perfection';
+                    const imgRadius = Math.min(26, Math.max(10, Math.round(size * 0.12)));
 
-                    if (isCustomImg) {
+                    if (isCustomImg && activeCustomParams.heroImageUrl) {
                       return (
-                        <img
-                          src={customParams.heroImageUrl}
-                          alt="Hero specimen"
-                          className="object-cover rounded-2xl shadow-2xl"
+                        <div
+                          className="relative flex items-center justify-center transition-all duration-300 overflow-hidden shadow-2xl group shrink-0"
                           style={{
                             width: `${size}px`,
                             height: `${size}px`,
-                            filter: `drop-shadow(0 10px 25px ${activeAccent}40)`,
+                            borderRadius: `${imgRadius}px`,
                           }}
-                        />
+                        >
+                          <div className="absolute inset-0 border border-white/20 dark:border-white/10 rounded-[inherit] pointer-events-none z-10" />
+                          <img
+                            src={activeCustomParams.heroImageUrl}
+                            alt="Hero specimen"
+                            className="w-full h-full object-cover rounded-[inherit] transition-transform duration-500 group-hover:scale-105"
+                            style={{
+                              filter: `drop-shadow(0 10px 25px ${activeAccent}35)`,
+                            }}
+                            onError={() => {
+                              console.warn('Hero image failed to load:', activeCustomParams.heroImageUrl);
+                            }}
+                          />
+                        </div>
                       );
                     }
                     if (isSpecImg) {
                       return (
-                        <img
-                          src={(heroEl.content as any).src}
-                          alt="Hero specimen"
-                          className="object-cover rounded-2xl shadow-2xl"
+                        <div
+                          className="relative flex items-center justify-center transition-all duration-300 overflow-hidden shadow-2xl group shrink-0"
                           style={{
                             width: `${size}px`,
                             height: `${size}px`,
-                            filter: 'drop-shadow(0 10px 25px rgba(225,75,45,0.3))',
+                            borderRadius: `${imgRadius}px`,
                           }}
-                        />
+                        >
+                          <div className="absolute inset-0 border border-white/20 dark:border-white/10 rounded-[inherit] pointer-events-none z-10" />
+                          <img
+                            src={(heroEl.content as any).src}
+                            alt="Hero specimen"
+                            className="w-full h-full object-cover rounded-[inherit] transition-transform duration-500 group-hover:scale-105"
+                            style={{
+                              filter: 'drop-shadow(0 10px 25px rgba(225,75,45,0.3))',
+                            }}
+                          />
+                        </div>
                       );
                     }
                     return (
                       <svg
-                        className="relative z-10 transition-transform duration-300"
+                        className="relative z-10 transition-transform duration-300 select-none"
                         style={{
                           width: `${size}px`,
                           height: `${size}px`,
@@ -826,39 +1037,47 @@ export function App() {
                         strokeWidth="1.2"
                         viewBox="0 0 24 24"
                       >
+                        {/* Smooth Headband Arch */}
                         <path
                           d="M3 18v-6a9 9 0 0118 0v6"
                           stroke={isDarkMode ? '#1a1816' : '#f8f6f0'}
-                          strokeLinecap="square"
-                          strokeLinejoin="miter"
-                          strokeWidth="1.5"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth="1.6"
                         />
+                        {/* Acoustic Ear Cups */}
                         <path
                           d="M21 19a2 2 0 01-2 2h-1a2 2 0 01-2-2v-3a2 2 0 012-2h3v5zM3 19a2 2 0 002 2h1a2 2 0 002-2v-3a2 2 0 00-2-2H3v5z"
                           fill={isDarkMode ? '#f0eae1' : '#1b1613'}
                           stroke={activeAccent}
-                          strokeLinecap="square"
-                          strokeLinejoin="miter"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
                           strokeWidth="1.4"
                         />
-                        <circle cx="12" cy="12" fill={activeAccent} r="2" />
+                        {/* Headband Apex Cushion */}
+                        <path
+                          d="M10 3a2 2 0 014 0"
+                          stroke={activeAccent}
+                          strokeWidth="1.6"
+                          strokeLinecap="round"
+                        />
                       </svg>
                     );
                   };
 
                   // Render Spec Badges Triptych
                   const renderChips = () => {
-                    const tag1 = activePlateKey === 'custom' ? customParams.tag1 : '48dB ANC';
-                    const tag2 = activePlateKey === 'custom' ? customParams.tag2 : 'TI-DRIVER';
-                    const tag3 = activePlateKey === 'custom' ? customParams.tag3 : 'LOSSLESS';
+                    const tag1 = activeCustomParams.tag1 || 'ZOOMX FOAM';
+                    const tag2 = activeCustomParams.tag2 || 'CARBON-PLATE';
+                    const tag3 = activeCustomParams.tag3 || 'ULTRA-LIGHT';
 
                     return (
-                      <div className="flex items-center space-x-1.5 flex-wrap gap-y-1">
-                        <span className={`text-[8px] sm:text-[9px] font-mono uppercase tracking-wider px-2 py-0.5 border ${chipBgClass}`}>
+                      <div className="flex items-center space-x-1.5 flex-wrap gap-y-1 justify-center">
+                        <span className={`text-[8px] sm:text-[9px] font-mono uppercase tracking-wider px-2 py-0.5 border rounded-full ${chipBgClass}`}>
                           {tag1}
                         </span>
                         <span
-                          className="text-[8px] sm:text-[9px] font-mono uppercase tracking-wider px-2 py-0.5 border font-semibold"
+                          className="text-[8px] sm:text-[9px] font-mono uppercase tracking-wider px-2 py-0.5 border rounded-full font-semibold"
                           style={{
                             borderColor: `${activeAccent}80`,
                             backgroundColor: isDarkMode ? `${activeAccent}18` : `${activeAccent}1a`,
@@ -867,7 +1086,7 @@ export function App() {
                         >
                           {tag2}
                         </span>
-                        <span className={`text-[8px] sm:text-[9px] font-mono uppercase tracking-wider px-2 py-0.5 border ${chipBgClass}`}>
+                        <span className={`text-[8px] sm:text-[9px] font-mono uppercase tracking-wider px-2 py-0.5 border rounded-full ${chipBgClass}`}>
                           {tag3}
                         </span>
                       </div>
@@ -879,48 +1098,69 @@ export function App() {
                     return (
                       <div
                         id="ad-canvas"
-                        className={`relative w-full h-full ${screenBgClass} px-5 py-3 flex flex-row items-center justify-between ${textPrimaryClass} overflow-hidden select-none gap-4 transition-colors duration-300`}
+                        className={`relative w-full h-full ${screenBgClass} px-5 py-2 flex flex-row items-center justify-between ${textPrimaryClass} overflow-hidden select-none gap-3 transition-colors duration-300`}
                       >
-                        {/* Left Branding & Headline Cluster */}
-                        <div className="flex-1 min-w-0 flex flex-col justify-center">
+                        {/* Left Zone: Headline & Specs */}
+                        <div className="flex-1 min-w-0 flex flex-col justify-center py-0.5">
                           <div className="flex items-center space-x-2">
-                            <span className="text-[8px] font-mono tracking-widest uppercase font-semibold truncate" style={{ color: activeBadgeColor }}>
+                            <span className="text-[8px] font-mono tracking-widest uppercase font-semibold" style={{ color: activeBadgeColor }}>
                               {activeBadgeText}
                             </span>
-                            <span className={`text-[7px] font-mono border ${specCodeBgClass} px-1.5 py-0.2 shrink-0`}>
+                            <span className={`text-[8px] font-mono border ${specCodeBgClass} px-1.5 py-0.2 rounded-xs`}>
                               {activeSpecCode}
                             </span>
                           </div>
+
                           <h2
                             id="creative-headline"
-                            className={`font-editorial font-normal leading-tight tracking-tight ${textHeadlineClass} mt-1 truncate`}
+                            className={`font-editorial font-normal leading-[1.08] tracking-tight ${textHeadlineClass} mt-1 truncate`}
                             style={{ fontSize: `${titleFontSize}px` }}
                           >
                             {activeHeadlineMain} {activeHeadlineAccent && <span className="italic font-light" style={{ color: activeAccent }}>{activeHeadlineAccent}</span>}
                           </h2>
+
+                          {showSubline && (
+                            <p id="creative-subline" className={`text-[10px] font-serif italic ${textSublineClass} mt-0.5 truncate`}>
+                              {activeSublineText}
+                            </p>
+                          )}
                         </div>
 
-                        {/* Center Hero Icon/Asset */}
+                        {/* Center Zone: Acquisition Price */}
+                        <div className="shrink-0 flex flex-col items-center justify-center px-3 border-l border-r border-[#e2dad2]/60 dark:border-stone-800">
+                          <span className={`text-[7px] font-mono uppercase tracking-widest ${textMutedClass}`}>
+                            Acquisition Spec
+                          </span>
+                          <div className="flex items-baseline space-x-1.5">
+                            <span className={`font-editorial text-lg ${textHeadlineClass} font-normal`}>
+                              {activePriceText}
+                            </span>
+                            <span className={`font-mono text-[10px] ${textMutedClass} line-through`}>
+                              {activeOriginalPrice}
+                            </span>
+                          </div>
+                          <span className="text-[7px] font-mono uppercase tracking-widest font-semibold" style={{ color: activeAccent }}>
+                            {activeEdition}
+                          </span>
+                        </div>
+
+                        {/* Center-Right: Hero Visual */}
                         <div className="shrink-0 flex items-center justify-center">
                           {renderHeroVisual(heroSize)}
                         </div>
 
-                        {/* Right Action & Pricing Cluster */}
-                        <div className="shrink-0 flex items-center space-x-4">
-                          <div className="hidden sm:flex flex-col items-end">
-                            <span className={`text-[7px] font-mono uppercase tracking-widest ${textMutedClass}`}>
-                              {activeEdition}
-                            </span>
-                            <div className="flex items-baseline space-x-1.5">
-                              <span className={`font-editorial text-lg ${textHeadlineClass} font-normal`}>{activePriceText}</span>
-                              <span className={`font-mono text-[10px] ${textMutedClass} line-through`}>{activeOriginalPrice}</span>
+                        {/* Right Wing Zone: Chips + CTA Button */}
+                        <div className="shrink-0 flex flex-col items-end justify-center space-y-1.5">
+                          {showChips && (
+                            <div className="hidden sm:block">
+                              {renderChips()}
                             </div>
-                          </div>
+                          )}
                           <button
-                            className="h-9 px-4 text-[#fffdfa] font-mono text-[11px] uppercase tracking-wider font-bold rounded-xs flex items-center space-x-2 transition-all shadow-md active:scale-98 cursor-pointer"
+                            className="h-8 px-4 text-[#fffdfa] font-mono text-[10px] uppercase tracking-wider font-bold rounded-xl flex items-center space-x-2 transition-all shadow-md hover:brightness-110 active:scale-[0.99] cursor-pointer"
                             style={{ backgroundColor: activeAccent }}
                           >
-                            <span>{activeCta}</span>
+                            <span className="whitespace-nowrap">{activeCta}</span>
                             <span>→</span>
                           </button>
                         </div>
@@ -933,23 +1173,23 @@ export function App() {
                     return (
                       <div
                         id="ad-canvas"
-                        className={`relative w-full h-full ${screenBgClass} p-5 grid grid-cols-2 gap-4 items-center ${textPrimaryClass} overflow-hidden select-none transition-colors duration-300`}
+                        className={`relative w-full h-full ${screenBgClass} ${isVeryCompactH ? 'p-3.5 gap-3' : 'p-5 gap-5'} grid grid-cols-2 items-center ${textPrimaryClass} overflow-hidden select-none transition-colors duration-300`}
                       >
-                        {/* Left Narrative Column */}
-                        <div className="flex flex-col justify-between h-full py-1">
-                          <div>
+                        {/* Left Narrative Column (Headline at Top, Price & CTA at Bottom) */}
+                        <div className="flex flex-col justify-between h-full py-0.5 min-w-0">
+                          <div className="min-w-0">
                             <div className="flex items-center space-x-2">
-                              <span className="text-[9px] font-mono tracking-widest uppercase font-semibold" style={{ color: activeBadgeColor }}>
+                              <span className="text-[9px] font-mono tracking-widest uppercase font-semibold truncate" style={{ color: activeBadgeColor }}>
                                 {activeBadgeText}
                               </span>
-                              <span className={`text-[8px] font-mono border ${specCodeBgClass} px-1.5 py-0.2`}>
+                              <span className={`text-[8px] font-mono border ${specCodeBgClass} px-2 py-0.5 rounded-xs shrink-0`}>
                                 {activeSpecCode}
                               </span>
                             </div>
 
                             <h2
                               id="creative-headline"
-                              className={`font-editorial font-normal leading-[1.1] tracking-tight ${textHeadlineClass} mt-2 line-clamp-2`}
+                              className={`font-editorial font-normal leading-[1.08] tracking-tight ${textHeadlineClass} mt-1.5 line-clamp-2`}
                               style={{ fontSize: `${titleFontSize}px` }}
                             >
                               {activeHeadlineMain} <br />
@@ -961,71 +1201,81 @@ export function App() {
                             </h2>
 
                             {showSubline && (
-                              <p id="creative-subline" className={`text-[11px] font-serif italic ${textSublineClass} mt-1 leading-snug line-clamp-2`}>
+                              <p id="creative-subline" className={`text-[10px] sm:text-[11px] font-serif italic ${textSublineClass} mt-1 leading-snug line-clamp-2`}>
                                 {activeSublineText}
                               </p>
                             )}
                           </div>
 
-                          {/* Price & CTA Action */}
-                          <div className={`space-y-2 pt-2 border-t ${borderSubtleClass}/80`}>
+                          {/* Price & CTA Action strictly anchored at bottom of left column */}
+                          <div className={`space-y-1.5 pt-1.5 border-t ${borderSubtleClass}`}>
                             <div className="flex items-baseline justify-between">
-                              <div className="flex items-baseline space-x-2">
-                                <span className={`font-editorial text-xl ${textHeadlineClass} font-normal`}>{activePriceText}</span>
-                                <span className={`font-mono text-xs ${textMutedClass} line-through`}>{activeOriginalPrice}</span>
+                              <div>
+                                <span className={`text-[7px] font-mono uppercase tracking-widest ${textMutedClass} block`}>
+                                  Acquisition Spec
+                                </span>
+                                <div className="flex items-baseline space-x-1.5">
+                                  <span className={`font-editorial ${isVeryCompactH ? 'text-lg' : 'text-xl'} ${textHeadlineClass} font-normal`}>
+                                    {activePriceText}
+                                  </span>
+                                  <span className={`font-mono text-[10px] sm:text-xs ${textMutedClass} line-through`}>
+                                    {activeOriginalPrice}
+                                  </span>
+                                </div>
                               </div>
                               <span className="text-[8px] font-mono uppercase tracking-widest font-semibold" style={{ color: activeAccent }}>
                                 {activeEdition}
                               </span>
                             </div>
+
                             <button
-                              className="w-full h-9 text-[#fffdfa] font-mono text-[11px] uppercase tracking-wider font-bold flex items-center justify-between px-3.5 transition-all shadow-md active:scale-98 cursor-pointer rounded-xs"
+                              className={`w-full ${isVeryCompactH ? 'h-7 text-[10px] rounded-lg' : 'h-8 sm:h-9 text-[11px] rounded-xl'} text-[#fffdfa] font-mono uppercase tracking-wider font-bold flex items-center justify-between px-3 sm:px-4 transition-all shadow-md hover:brightness-110 active:scale-[0.99] cursor-pointer`}
                               style={{ backgroundColor: activeAccent }}
                             >
-                              <span>{activeCta}</span>
-                              <span>→</span>
+                              <span className="truncate">{activeCta}</span>
+                              <span className="ml-2 font-bold">→</span>
                             </button>
                           </div>
                         </div>
 
-                        {/* Right Hero & Chips Column */}
-                        <div className="flex flex-col items-center justify-center h-full py-1">
-                          <div className="my-auto flex items-center justify-center">
+                        {/* Right Hero & Chips Column (Hero Centered, Chips Below) */}
+                        <div className="flex flex-col items-center justify-center h-full py-0.5 min-w-0 overflow-hidden">
+                          <div className="my-auto flex items-center justify-center min-h-0">
                             {renderHeroVisual(heroSize)}
                           </div>
-                          <div className="mt-2">
-                            {renderChips()}
-                          </div>
+                          {showChips && (
+                            <div className="mt-2 shrink-0">
+                              {renderChips()}
+                            </div>
+                          )}
                         </div>
                       </div>
                     );
                   }
 
-                  const hasNotch = activePlateKey === 'custom' ? customParams.notch : activeSpecimen.notch;
-
-                  /* 3. VERTICAL SINGLE COLUMN STACK (AR < 1.35) */
+                  /* 3. VERTICAL SINGLE COLUMN STACK (AR < 1.35: Portrait & Square Kiosk) */
                   return (
                     <div
                       id="ad-canvas"
-                      className={`relative w-full h-full ${screenBgClass} px-6 pt-5 pb-6 sm:px-7 sm:pt-6 sm:pb-7 flex flex-col justify-between ${textPrimaryClass} overflow-hidden select-none transition-colors duration-300`}
+                      className={`relative w-full h-full ${screenBgClass} ${isVeryCompactH ? 'p-3' : isCompactH ? 'p-4' : 'px-6 pt-5 pb-6 sm:px-7 sm:pt-6 sm:pb-7'} flex flex-col justify-between ${textPrimaryClass} overflow-hidden select-none transition-all duration-300`}
                     >
                       {/* Specimen Header */}
-                      <div className={`relative z-10 ${hasNotch ? 'pt-7' : 'pt-1'}`}>
+                      <div className={`relative z-10 shrink-0 ${hasNotch ? 'pt-7' : 'pt-0.5'}`}>
                         <div className="flex items-center justify-between">
                           <span
-                            className="text-[9px] font-mono tracking-widest uppercase font-semibold"
+                            className="text-[8px] sm:text-[9px] font-mono tracking-widest uppercase font-semibold truncate mr-1"
                             style={{ color: activeBadgeColor }}
                           >
                             {activeBadgeText}
                           </span>
-                          <span className={`text-[8px] font-mono border ${specCodeBgClass} px-2 py-0.5`}>
+                          <span className={`text-[8px] font-mono border ${specCodeBgClass} px-1.5 py-0.2 rounded-xs shrink-0`}>
                             {activeSpecCode}
                           </span>
                         </div>
 
                         <h2
                           id="creative-headline"
-                          className={`font-editorial font-normal leading-[1.08] tracking-tight ${textHeadlineClass} mt-2`}
+                          className={`font-editorial font-normal leading-[1.08] tracking-tight ${textHeadlineClass} mt-1 line-clamp-2`}
                           style={{ fontSize: `${titleFontSize}px` }}
                         >
                           {activeHeadlineMain} <br />
@@ -1037,46 +1287,53 @@ export function App() {
                         </h2>
 
                         {showSubline && (
-                          <p id="creative-subline" className={`text-xs font-serif italic ${textSublineClass} mt-1 leading-relaxed line-clamp-2`}>
+                          <p id="creative-subline" className={`text-[10px] sm:text-[11px] font-serif italic ${textSublineClass} mt-1 leading-snug line-clamp-2`}>
                             {activeSublineText}
                           </p>
                         )}
                       </div>
 
-                      {/* Architectural Hero Visual Vector / Image */}
-                      <div className="relative z-10 my-auto flex flex-col items-center justify-center py-1">
-                        <div className="flex items-center justify-center">
+                      {/* Center Hero Visual Vector & Chips (Safe Middle Clearance) */}
+                      <div className="relative z-10 flex-1 min-h-0 flex flex-col items-center justify-center py-0.5 overflow-hidden">
+                        <div className="flex items-center justify-center min-h-0 max-h-full">
                           {renderHeroVisual(heroSize)}
                         </div>
-                        <div className="mt-2.5">
-                          {renderChips()}
-                        </div>
+                        {showChips && (
+                          <div className="mt-1.5 sm:mt-2 shrink-0">
+                            {renderChips()}
+                          </div>
+                        )}
                       </div>
 
-                      {/* Specimen Foot Acquisition Anchor */}
-                      <div className="relative z-10 space-y-2.5 pb-2.5 sm:pb-3">
-                        <div className={`flex items-baseline justify-between border-b ${borderSubtleClass} pb-1.5`}>
+                      {/* Specimen Foot Acquisition Anchor (Always pinned at bottom, never clipped) */}
+                      <div className={`relative z-20 shrink-0 ${isVeryCompactH ? 'space-y-1 pb-0.5' : 'space-y-2 pb-1'}`}>
+                        <div className={`flex items-baseline justify-between border-b ${borderSubtleClass} ${isVeryCompactH ? 'pb-0.5' : 'pb-1.5'}`}>
                           <div>
-                            <span className={`text-[8px] font-mono uppercase tracking-widest ${textMutedClass} block`}>
-                              Acquisition Spec
-                            </span>
-                            <div className="flex items-baseline space-x-2">
-                              <span className={`font-editorial text-2xl ${textHeadlineClass} font-normal`}>{activePriceText}</span>
-                              <span className={`font-mono text-xs ${textMutedClass} line-through`}>{activeOriginalPrice}</span>
+                            {!isVeryCompactH && (
+                              <span className={`text-[7px] sm:text-[8px] font-mono uppercase tracking-widest ${textMutedClass} block`}>
+                                Acquisition Spec
+                              </span>
+                            )}
+                            <div className="flex items-baseline space-x-1.5">
+                              <span className={`font-editorial ${isVeryCompactH ? 'text-lg' : isCompactH ? 'text-xl' : 'text-2xl'} ${textHeadlineClass} font-normal`}>
+                                {activePriceText}
+                              </span>
+                              <span className={`font-mono ${isVeryCompactH ? 'text-[9px]' : isCompactH ? 'text-[10px]' : 'text-xs'} ${textMutedClass} line-through`}>
+                                {activeOriginalPrice}
+                              </span>
                             </div>
                           </div>
-                          <span className="text-[9px] font-mono uppercase tracking-widest font-semibold" style={{ color: activeAccent }}>
+                          <span className="text-[8px] sm:text-[9px] font-mono uppercase tracking-widest font-semibold" style={{ color: activeAccent }}>
                             {activeEdition}
                           </span>
                         </div>
 
-                        {/* Swiss Typographic Acquisition Button */}
                         <button
-                          className="w-full h-11 text-[#fffdfa] font-mono text-xs uppercase tracking-monumental flex items-center justify-between px-5 transition-all shadow-lg active:scale-[0.99] cursor-pointer rounded-xs"
+                          className={`w-full ${isVeryCompactH ? 'h-7 text-[10px] rounded-lg' : isCompactH ? 'h-9 text-[11px] rounded-xl' : 'h-11 text-xs rounded-xl sm:rounded-2xl'} text-[#fffdfa] font-mono uppercase tracking-monumental flex items-center justify-between px-3 sm:px-4 transition-all shadow-lg hover:brightness-110 active:scale-[0.99] cursor-pointer`}
                           style={{ backgroundColor: activeAccent }}
                         >
-                          <span className="font-bold">{activeCta}</span>
-                          <span className="text-sm font-bold">→</span>
+                          <span className="font-bold truncate">{activeCta}</span>
+                          <span className="text-xs font-bold shrink-0 ml-1.5">→</span>
                         </button>
                       </div>
                     </div>
@@ -1107,9 +1364,11 @@ export function App() {
           {/* Header with Close */}
           <div className="flex items-start justify-between mb-5 pb-3 border-b border-[#e2dad2] dark:border-[#262320]">
             <div>
-              <h2 className="font-editorial text-2xl text-[#141210] dark:text-[#f5ede4] font-normal leading-tight">
-                Adaptive Layout Engine
-              </h2>
+              <div className="mb-1">
+                <h2 className="font-editorial text-2xl text-[#141210] dark:text-[#f5ede4] font-normal leading-tight">
+                  Adaptive Layout <span className="italic text-[#e14b2d] font-light">Studio.</span>
+                </h2>
+              </div>
               <p className="text-[11px] font-serif italic text-[#554339] dark:text-[#9e9086] mt-1.5 leading-relaxed">
                 Design once. Adapt everywhere. <br />
                 Intelligent layouts powered by constraints, not breakpoints.
@@ -1126,24 +1385,6 @@ export function App() {
             </button>
           </div>
 
-          {/* Active Ad Specimen Select */}
-          <div className="mb-4">
-            <label className="text-[9px] font-mono uppercase tracking-widest text-[#554339] dark:text-[#9e9086] block mb-1 font-bold">
-              Active Ad Specimen
-            </label>
-            <select
-              value={activeSpecId}
-              onChange={(e) => setActiveSpecId(e.target.value)}
-              className="w-full bg-white/70 dark:bg-[#1a1715] border border-[#e2dad2] dark:border-[#262320] rounded-sm px-2.5 py-1.5 text-xs font-editorial text-[#141210] dark:text-[#f5ede4] outline-none"
-            >
-              {specs.map((s) => (
-                <option key={s.id} value={s.id} className="bg-[#f5efe8] dark:bg-[#110f0e]">
-                  {s.name}
-                </option>
-              ))}
-            </select>
-          </div>
-
           {/* Specimen Plates List */}
           <div className="space-y-2.5">
             {specimens.map((specimen) => {
@@ -1152,12 +1393,13 @@ export function App() {
                 <div
                   key={specimen.key}
                   onClick={() => {
-                    setActivePlateKey(specimen.key);
-                    setIsAutoDeviceMode(false);
-                    setIsMobileFolioOpen(false);
                     if (specimen.key === 'custom') {
-                      setIsCustomStudioOpen(true);
+                      handleOpenStudio();
+                    } else {
+                      setActivePlateKey(specimen.key);
+                      setIsAutoDeviceMode(false);
                     }
+                    setIsMobileFolioOpen(false);
                   }}
                   className={`cursor-pointer p-3 border-l-2 transition-all rounded-r-xs ${
                     isActive
@@ -1188,7 +1430,7 @@ export function App() {
         {/* Curatorial Dispatch Colophon */}
         <div className="pt-4 mt-4 border-t border-[#e2dad2] dark:border-[#262320] text-[10px] font-mono text-[#554339] dark:text-[#9e9086]">
           <p className="font-editorial italic text-xs leading-relaxed text-[#73675e] dark:text-[#a1958b]">
-            “Every millimeter is an architectural declaration. Typography ceases to be passive text and becomes spatial masonry.”
+            “Every constraint is an opportunity. Every surface deserves its own perfect composition.”
           </p>
         </div>
       </aside>
@@ -1196,8 +1438,8 @@ export function App() {
       {/* SLIDE-OVER CUSTOMISE YOUR AD STUDIO DRAWER */}
       <div
         id="custom-studio-backdrop"
-        onClick={() => setIsCustomStudioOpen(false)}
-        className={`fixed inset-0 z-50 transition-opacity duration-300 bg-black/50 backdrop-blur-xs ${
+        onClick={handleCancelStudio}
+        className={`fixed inset-0 z-30 transition-opacity duration-300 bg-black/40 dark:bg-black/60 backdrop-blur-xs ${
           isCustomStudioOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
         }`}
       />
@@ -1209,10 +1451,12 @@ export function App() {
         }`}
       >
         <CustomiseAdStudio
-          params={customParams}
-          onChange={setCustomParams}
-          onReset={() => setCustomParams(defaultCustomParams)}
-          onClose={() => setIsCustomStudioOpen(false)}
+          params={draftParams}
+          onChange={setDraftParams}
+          onReset={() => setDraftParams(defaultCustomParams)}
+          onClose={handleCancelStudio}
+          onSave={handleSaveStudio}
+          onCancel={handleCancelStudio}
         />
       </aside>
 
@@ -1220,7 +1464,7 @@ export function App() {
       <div
         id="telemetry-backdrop"
         onClick={() => setIsTelemetryOpen(false)}
-        className={`fixed inset-0 z-50 transition-opacity duration-300 bg-black/50 backdrop-blur-xs ${
+        className={`fixed inset-0 z-50 transition-opacity duration-300 bg-black/25 backdrop-blur-[1px] ${
           isTelemetryOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
         }`}
       />
@@ -1265,7 +1509,7 @@ export function App() {
             <div>
               <div className="flex items-center justify-between pb-2 mb-3 border-b border-[#e2dad2] dark:border-[#262320]">
                 <div className="flex items-baseline space-x-2">
-                  <span className="text-[10px] font-mono font-bold text-[#e14b2d] uppercase tracking-wider">§ 01</span>
+                  <span className="text-[10px] font-mono font-bold text-[#e14b2d] uppercase tracking-wider">01</span>
                   <h3 className="font-editorial text-base text-[#141210] dark:text-[#f5ede4]">Constraint Inspector</h3>
                 </div>
                 <span className="text-[9px] font-mono px-1.5 py-0.5 border border-[#d6ccc2] dark:border-[#332f2b] text-[#73675e] dark:text-[#9e9086] uppercase tracking-wider">
@@ -1314,34 +1558,110 @@ export function App() {
             <div>
               <div className="flex items-center justify-between pb-2 mb-3 border-b border-[#e2dad2] dark:border-[#262320]">
                 <div className="flex items-baseline space-x-2">
-                  <span className="text-[10px] font-mono font-bold text-[#e14b2d] uppercase tracking-wider">§ 02</span>
+                  <span className="text-[10px] font-mono font-bold text-[#e14b2d] uppercase tracking-wider">02</span>
                   <h3 className="font-editorial text-base text-[#141210] dark:text-[#f5ede4]">Layout Decisions</h3>
                 </div>
-                <span className="text-[9px] font-mono px-1.5 py-0.5 border border-[#d6ccc2] dark:border-[#332f2b] text-[#73675e] dark:text-[#9e9086] uppercase tracking-wider">
+                <span className="text-[9px] font-mono px-1.5 py-0.5 border border-[#d6ccc2] dark:border-[#332f2b] text-[#73675e] dark:text-[#9e9086] uppercase tracking-wider rounded-2xs">
                   Priority Tree
                 </span>
               </div>
+
+              {priorityToast && (
+                <div className="mb-2.5 px-2.5 py-1.5 bg-[#e14b2d]/10 border border-[#e14b2d]/30 rounded-xs text-[10px] font-mono text-[#e14b2d] flex items-center gap-1.5 animate-pulse">
+                  <Sparkles className="w-3 h-3 shrink-0" />
+                  <span className="truncate">{priorityToast}</span>
+                </div>
+              )}
+
+              <p className="text-[10px] font-mono text-[#73675e] dark:text-[#887c72] mb-2.5">
+                Drag cards or use ↑ / ↓ buttons to adjust element priorities:
+              </p>
+
               <div className="space-y-2 font-mono text-[10px]">
-                <div className="p-2.5 rounded-sm bg-white/60 dark:bg-[#181513] border border-[#e2dad2] dark:border-[#262320] flex justify-between items-center">
-                  <span className="text-[#554339] dark:text-[#9e9086]">P1 · CTA Action</span>
-                  <span className="font-semibold text-[#e14b2d]">Bottom Thumb Reach</span>
-                </div>
-                <div className="p-2.5 rounded-sm bg-white/60 dark:bg-[#181513] border border-[#e2dad2] dark:border-[#262320] flex justify-between items-center">
-                  <span className="text-[#554339] dark:text-[#9e9086]">P1 · Headline</span>
-                  <span className="font-medium text-[#141210] dark:text-[#f5ede4]">Upper Dominance</span>
-                </div>
-                <div className="p-2.5 rounded-sm bg-white/60 dark:bg-[#181513] border border-[#e2dad2] dark:border-[#262320] flex justify-between items-center">
-                  <span className="text-[#554339] dark:text-[#9e9086]">P2 · Product Hero</span>
-                  <span className="font-medium text-[#141210] dark:text-[#f5ede4]">Center Stage Acoustic</span>
-                </div>
-                <div className="p-2.5 rounded-sm bg-white/60 dark:bg-[#181513] border border-[#e2dad2] dark:border-[#262320] flex justify-between items-center">
-                  <span className="text-[#554339] dark:text-[#9e9086]">P3 · Feature Badges</span>
-                  <span className="font-medium text-[#141210] dark:text-[#f5ede4]">Inline Pill Bar</span>
-                </div>
-                <div className="p-2.5 rounded-sm bg-white/60 dark:bg-[#181513] border border-[#e2dad2] dark:border-[#262320] flex justify-between items-center">
-                  <span className="text-[#554339] dark:text-[#9e9086]">P4 · Offer Price</span>
-                  <span className="font-medium text-[#141210] dark:text-[#f5ede4]">Pre-CTA Anchor</span>
-                </div>
+                {layoutDecisions.map((item, idx) => {
+                  const isDragged = draggedIndex === idx;
+                  const isOver = dragOverIndex === idx;
+
+                  return (
+                    <div
+                      key={item.key}
+                      draggable
+                      onDragStart={(e) => {
+                        setDraggedIndex(idx);
+                        e.dataTransfer.setData('text/plain', String(idx));
+                        e.dataTransfer.effectAllowed = 'move';
+                      }}
+                      onDragOver={(e) => {
+                        e.preventDefault();
+                        if (dragOverIndex !== idx) setDragOverIndex(idx);
+                      }}
+                      onDragLeave={() => {
+                        if (dragOverIndex === idx) setDragOverIndex(null);
+                      }}
+                      onDrop={(e) => {
+                        e.preventDefault();
+                        if (draggedIndex !== null && draggedIndex !== idx) {
+                          movePriorityItem(draggedIndex, idx);
+                        }
+                        setDraggedIndex(null);
+                        setDragOverIndex(null);
+                      }}
+                      onDragEnd={() => {
+                        setDraggedIndex(null);
+                        setDragOverIndex(null);
+                      }}
+                      className={`p-2.5 rounded-sm bg-white/60 dark:bg-[#181513] border transition-all flex items-center justify-between cursor-grab active:cursor-grabbing group shadow-2xs ${
+                        isDragged
+                          ? 'opacity-40 border-dashed border-[#e14b2d] scale-98'
+                          : isOver
+                          ? 'border-[#e14b2d] bg-[#e14b2d]/5 dark:bg-[#e14b2d]/10 shadow-md ring-1 ring-[#e14b2d]'
+                          : 'border-[#e2dad2] dark:border-[#262320] hover:border-[#e14b2d]/50 dark:hover:border-[#e14b2d]/50 hover:bg-white dark:hover:bg-[#201c19]'
+                      }`}
+                    >
+                      <div className="flex items-center gap-1.5 min-w-0">
+                        <GripVertical className="w-3.5 h-3.5 text-stone-400 group-hover:text-[#e14b2d] shrink-0" />
+                        <span className="px-1.5 py-0.2 rounded-2xs bg-stone-200 dark:bg-stone-800 text-[9px] font-bold text-[#e14b2d]">
+                          {item.priority}
+                        </span>
+                        <span className="text-[#554339] dark:text-[#9e9086] group-hover:text-[#141210] dark:group-hover:text-white transition-colors font-medium truncate">
+                          {item.element}
+                        </span>
+                      </div>
+
+                      <div className="flex items-center gap-1 shrink-0">
+                        {/* Up arrow */}
+                        <button
+                          type="button"
+                          disabled={idx === 0}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            movePriorityItem(idx, idx - 1);
+                          }}
+                          title="Move Up"
+                          className="p-1 rounded-2xs text-stone-400 hover:text-[#e14b2d] hover:bg-black/5 dark:hover:bg-white/5 disabled:opacity-20 disabled:hover:text-stone-400 disabled:cursor-not-allowed cursor-pointer transition-colors"
+                        >
+                          <ArrowUp className="w-3 h-3" />
+                        </button>
+                        {/* Down arrow */}
+                        <button
+                          type="button"
+                          disabled={idx === layoutDecisions.length - 1}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            movePriorityItem(idx, idx + 1);
+                          }}
+                          title="Move Down"
+                          className="p-1 rounded-2xs text-stone-400 hover:text-[#e14b2d] hover:bg-black/5 dark:hover:bg-white/5 disabled:opacity-20 disabled:hover:text-stone-400 disabled:cursor-not-allowed cursor-pointer transition-colors"
+                        >
+                          <ArrowDown className="w-3 h-3" />
+                        </button>
+                        <span className={`font-semibold ml-1.5 ${item.accent ? 'text-[#e14b2d]' : 'text-[#141210] dark:text-[#f5ede4]'}`}>
+                          {item.decision}
+                        </span>
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
             </div>
 
@@ -1349,7 +1669,7 @@ export function App() {
             <div>
               <div className="flex items-center justify-between pb-2 mb-3 border-b border-[#e2dad2] dark:border-[#262320]">
                 <div className="flex items-baseline space-x-2">
-                  <span className="text-[10px] font-mono font-bold text-[#e14b2d] uppercase tracking-wider">§ 03</span>
+                  <span className="text-[10px] font-mono font-bold text-[#e14b2d] uppercase tracking-wider">03</span>
                   <h3 className="font-editorial text-base text-[#141210] dark:text-[#f5ede4]">Performance</h3>
                 </div>
                 <span className="text-[9px] font-mono px-1.5 py-0.5 border border-[#d6ccc2] dark:border-[#332f2b] text-[#73675e] dark:text-[#9e9086] uppercase tracking-wider">
@@ -1398,6 +1718,18 @@ export function App() {
           </p>
         </div>
       </aside>
+
+      {/* EXPORT / DOWNLOAD AD MODAL DIALOG */}
+      <ExportAdModal
+        isOpen={isExportModalOpen}
+        onClose={() => setIsExportModalOpen(false)}
+        activePlateName={activeSpecimen.name}
+        activeDimensions={activeSpecimen.dimensionsText}
+        width={surfaceWidth}
+        height={surfaceHeight}
+        customParams={customParams}
+        isDarkMode={isDarkMode}
+      />
     </div>
   );
 }
