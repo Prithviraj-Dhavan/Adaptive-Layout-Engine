@@ -179,3 +179,12 @@ body, aside, main, div, button, h1, h2, h3, p, span {
 ::-webkit-scrollbar-track {
   background: transparent;
 }
+
+/* Hide scrollbar utility */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}

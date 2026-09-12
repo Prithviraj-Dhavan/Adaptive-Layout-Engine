@@ -709,50 +709,51 @@ export function App() {
         {/* CENTER EXHIBITION GALLERY: ROTATING PEDESTAL STAGE */}
         <main className={`flex-1 w-full relative flex flex-col justify-between p-3 sm:p-5 md:p-6 overflow-hidden transition-all duration-300 ${isCustomStudioOpen ? 'lg:pr-[430px] xl:pr-[470px]' : ''}`}>
           {/* TOP CONTROLS ROW: FOLIO & 2D (Left) | CUSTOMISE, THEME, TELEMETRY (Right) */}
-          <div className={`flex items-center justify-between gap-2 shrink-0 mb-2 transition-all duration-300 ${isCustomStudioOpen ? 'opacity-30 blur-[1px] pointer-events-none z-10' : 'z-20'}`}>
-            {/* Left Side: FOLIO & 2D / 3D Mode Toggle Group */}
-            <div className="flex items-center space-x-2">
-              {/* Mobile Folio Catalog Drawer Toggle */}
-              <button
-                id="btn-mobile-folio"
-                onClick={() => setIsMobileFolioOpen(true)}
-                className="lg:hidden h-8 px-3.5 rounded-full border border-[#d6ccc2] dark:border-[#2b2622] bg-white/80 dark:bg-[#161311]/90 text-[#141210] dark:text-[#f5ede4] text-[10px] font-mono uppercase tracking-wider font-semibold flex items-center space-x-1.5 cursor-pointer shadow-xs hover:border-[#e14b2d] hover:text-[#e14b2d] transition-all"
-                title="Open Adaptive Layout Engine Folio"
-              >
-                <span>FOLIO</span>
-              </button>
+          <div className="w-full overflow-x-auto no-scrollbar scroll-smooth py-1 -my-1 shrink-0 mb-2 z-20">
+            <div className={`flex items-center justify-between gap-2 min-w-max sm:min-w-0 transition-all duration-300 ${isCustomStudioOpen ? 'opacity-30 blur-[1px] pointer-events-none' : ''}`}>
+              {/* Left Side: FOLIO & 2D / 3D Mode Toggle Group */}
+              <div className="flex items-center space-x-2 shrink-0">
+                {/* Mobile Folio Catalog Drawer Toggle */}
+                <button
+                  id="btn-mobile-folio"
+                  onClick={() => setIsMobileFolioOpen(true)}
+                  className="lg:hidden h-8 px-3.5 rounded-full border border-[#d6ccc2] dark:border-[#2b2622] bg-white/80 dark:bg-[#161311]/90 text-[#141210] dark:text-[#f5ede4] text-[10px] font-mono uppercase tracking-wider font-semibold flex items-center space-x-1.5 cursor-pointer shadow-xs hover:border-[#e14b2d] hover:text-[#e14b2d] transition-all"
+                  title="Open Adaptive Layout Engine Folio"
+                >
+                  <span>FOLIO</span>
+                </button>
 
-              {/* 2D & 3D Segmented Control */}
-              <div className="flex items-center p-0.5 rounded-xs border border-[#d6ccc2] dark:border-[#2b2622] bg-white/80 dark:bg-[#161311]/90 backdrop-blur-md shadow-xs space-x-1">
-                <button
-                  id="btn-camera-2d"
-                  onClick={() => handleSelectCamera('2d')}
-                  className={`camera-btn h-7 px-2.5 sm:px-3 text-[10px] sm:text-[11px] font-mono uppercase tracking-wider font-semibold rounded-xs transition-all cursor-pointer ${
-                    cameraMode === '2d' && rotX === 0 && rotY === 0
-                      ? 'border border-[#181513] dark:border-stone-200 bg-[#181513] text-white dark:bg-white dark:text-[#181513] shadow-xs'
-                      : 'text-[#5e534c] dark:text-[#c4b8ad] hover:text-[#141210] dark:hover:text-white'
-                  }`}
-                  title="2D Flat Orthographic View"
-                >
-                  2D
-                </button>
-                <button
-                  id="btn-camera-3d"
-                  onClick={() => handleSelectCamera('3d')}
-                  className={`camera-btn h-7 px-2.5 sm:px-3 text-[10px] sm:text-[11px] font-mono uppercase tracking-wider font-semibold rounded-xs transition-all cursor-pointer ${
-                    cameraMode === '3d' || rotX !== 0 || rotY !== 0
-                      ? 'border border-[#181513] dark:border-stone-200 bg-[#181513] text-white dark:bg-white dark:text-[#181513] shadow-xs'
-                      : 'text-[#5e534c] dark:text-[#c4b8ad] hover:text-[#141210] dark:hover:text-white'
-                  }`}
-                  title="3D Perspective & Interactive Orbit View"
-                >
-                  3D
-                </button>
+                {/* 2D & 3D Segmented Control */}
+                <div className="flex items-center p-0.5 rounded-xs border border-[#d6ccc2] dark:border-[#2b2622] bg-white/80 dark:bg-[#161311]/90 backdrop-blur-md shadow-xs space-x-1">
+                  <button
+                    id="btn-camera-2d"
+                    onClick={() => handleSelectCamera('2d')}
+                    className={`camera-btn h-7 px-2.5 sm:px-3 text-[10px] sm:text-[11px] font-mono uppercase tracking-wider font-semibold rounded-xs transition-all cursor-pointer ${
+                      cameraMode === '2d' && rotX === 0 && rotY === 0
+                        ? 'border border-[#181513] dark:border-stone-200 bg-[#181513] text-white dark:bg-white dark:text-[#181513] shadow-xs'
+                        : 'text-[#5e534c] dark:text-[#c4b8ad] hover:text-[#141210] dark:hover:text-white'
+                    }`}
+                    title="2D Flat Orthographic View"
+                  >
+                    2D
+                  </button>
+                  <button
+                    id="btn-camera-3d"
+                    onClick={() => handleSelectCamera('3d')}
+                    className={`camera-btn h-7 px-2.5 sm:px-3 text-[10px] sm:text-[11px] font-mono uppercase tracking-wider font-semibold rounded-xs transition-all cursor-pointer ${
+                      cameraMode === '3d' || rotX !== 0 || rotY !== 0
+                        ? 'border border-[#181513] dark:border-stone-200 bg-[#181513] text-white dark:bg-white dark:text-[#181513] shadow-xs'
+                        : 'text-[#5e534c] dark:text-[#c4b8ad] hover:text-[#141210] dark:hover:text-white'
+                    }`}
+                    title="3D Perspective & Interactive Orbit View"
+                  >
+                    3D
+                  </button>
+                </div>
               </div>
-            </div>
 
-            {/* Right Side: CUSTOMISE, DOWNLOAD AD, THEME TOGGLE, TELEMETRY / HAMBURGER */}
-            <div className="flex items-center space-x-2">
+              {/* Right Side: CUSTOMISE, DOWNLOAD AD, THEME TOGGLE, TELEMETRY / HAMBURGER */}
+              <div className="flex items-center space-x-2 shrink-0">
               {/* Customise Your Ad Button */}
               <button
                 id="btn-customise"
@@ -833,6 +834,7 @@ export function App() {
                 </button>
               </div>
             </div>
+          </div>
           </div>
 
           {/* SECOND ROW: SPECIMEN PLATE BUTTONS (Down of top controls) */}
