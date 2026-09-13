@@ -951,7 +951,6 @@ export function App() {
                   // Spatial degradation regimes
                   const isVeryCompactH = surfaceHeight < 390;
                   const isCompactH = surfaceHeight < 520;
-                  const isVeryCompactW = surfaceWidth < 340;
 
                   // Subline Visibility (Stage 4 Text Truncation / Drop)
                   const showSubline = isUltraWide
