@@ -969,10 +969,20 @@ export function App() {
 
                   // Dynamic Typography (Stage 2 Font Tightening & Scaling)
                   const titleFontSize = isUltraWide
-                    ? Math.max(12, Math.min(surfaceHeight * 0.18, surfaceWidth * 0.035, 26))
+                    ? Math.max(12, Math.min(surfaceHeight * 0.18, surfaceWidth * 0.035))
                     : isSplitLandscape
-                      ? Math.max(12, Math.min(surfaceWidth * 0.042, surfaceHeight * 0.065, isCompactH ? 20 : 28))
-                      : Math.max(12, Math.min(surfaceWidth * 0.052, surfaceHeight * 0.052, isVeryCompactW ? 14 : isVeryCompactH ? 16 : isCompactH ? 20 : 30));
+                      ? Math.max(12, Math.min(surfaceWidth * 0.042, surfaceHeight * 0.065))
+                      : Math.max(12, Math.min(surfaceWidth * 0.052, surfaceHeight * 0.052));
+
+                  const badgeFontSize = Math.max(6, titleFontSize * 0.32);
+                  const specCodeFontSize = Math.max(6, titleFontSize * 0.32);
+                  const sublineFontSize = Math.max(8, titleFontSize * 0.45);
+                  const acqSpecFontSize = Math.max(5, titleFontSize * 0.28);
+                  const priceFontSize = Math.max(12, titleFontSize * 0.85);
+                  const originalPriceFontSize = Math.max(8, titleFontSize * 0.40);
+                  const editionFontSize = Math.max(6, titleFontSize * 0.32);
+                  const ctaFontSize = Math.max(8, titleFontSize * 0.45);
+                  const ctaHeight = Math.max(24, ctaFontSize * 3.5);
 
                   const hasNotch = (activePlateKey === 'custom' ? activeCustomParams.notch : activeSpecimen.notch) && surfaceHeight >= 480 && !isUltraWide && !isSplitLandscape;
 
@@ -983,10 +993,10 @@ export function App() {
                   const verticalAvailableMiddle = Math.max(20, surfaceHeight - verticalHeaderH - verticalFooterH - verticalOuterPad - (showChips ? 26 : 0));
 
                   const heroSize = isUltraWide
-                    ? Math.max(36, Math.min(surfaceHeight * 0.82, surfaceWidth * 0.20, 135))
+                    ? Math.max(36, Math.min(surfaceHeight * 0.82, surfaceWidth * 0.20))
                     : isSplitLandscape
-                      ? Math.max(48, Math.min(surfaceWidth * 0.38, (surfaceHeight - (showChips ? 50 : 20)) * 0.85, 260))
-                      : Math.max(36, Math.min(surfaceWidth * 0.65, verticalAvailableMiddle * 0.82, isVeryCompactH ? 70 : isCompactH ? 220 : 270));
+                      ? Math.max(48, Math.min(surfaceWidth * 0.38, (surfaceHeight - (showChips ? 50 : 20)) * 0.85))
+                      : Math.max(36, Math.min(surfaceWidth * 0.65, verticalAvailableMiddle * 0.82));
 
                   // Dynamic Theme-Opposite Tokens for Inner Screen
                   const screenBgClass = isDarkMode ? 'bg-[#fcf9f5]' : 'bg-[#110e0c]';
@@ -1021,18 +1031,31 @@ export function App() {
                     const isCustomImg = hasCustomImage && activeCustomParams.heroMode === 'image';
                     const isSpecImg = !isCustomImg && heroEl && (heroEl.content as any)?.src && activeSpecId !== 'aura-acoustic-perfection';
                     const imgRadius = Math.min(26, Math.max(10, Math.round(size * 0.12)));
+                    
+                    let heroWidth = size;
+                    let heroHeight = size;
+
+                    if (isUltraWide) {
+                      heroWidth = size;
+                      heroHeight = size * 0.72; // Wide rectangle
+                    } else if (isSplitLandscape) {
+                      heroWidth = size;
+                      heroHeight = size; // Square
+                    } else {
+                      heroWidth = size * 0.94;
+                      heroHeight = size * 0.94; // Slightly smaller square
+                    }
 
                     if (isCustomImg && activeCustomParams.heroImageUrl) {
                       return (
                         <div
-                          className="relative flex items-center justify-center transition-all duration-300 overflow-hidden shadow-2xl group shrink-0"
+                          className="relative flex items-center justify-center transition-all duration-300 group shrink-0"
                           style={{
-                            width: `${size}px`,
-                            height: `${size}px`,
+                            width: `${heroWidth}px`,
+                            height: `${heroHeight}px`,
                             borderRadius: `${imgRadius}px`,
                           }}
                         >
-                          <div className="absolute inset-0 border border-white/20 dark:border-white/10 rounded-[inherit] pointer-events-none z-10" />
                           <img
                             src={activeCustomParams.heroImageUrl}
                             alt="Hero specimen"
@@ -1050,14 +1073,13 @@ export function App() {
                     if (isSpecImg) {
                       return (
                         <div
-                          className="relative flex items-center justify-center transition-all duration-300 overflow-hidden shadow-2xl group shrink-0"
+                          className="relative flex items-center justify-center transition-all duration-300 group shrink-0"
                           style={{
-                            width: `${size}px`,
-                            height: `${size}px`,
+                            width: `${heroWidth}px`,
+                            height: `${heroHeight}px`,
                             borderRadius: `${imgRadius}px`,
                           }}
                         >
-                          <div className="absolute inset-0 border border-white/20 dark:border-white/10 rounded-[inherit] pointer-events-none z-10" />
                           <img
                             src={(heroEl.content as any).src}
                             alt="Hero specimen"
@@ -1118,20 +1140,21 @@ export function App() {
 
                     return (
                       <div className="flex items-center space-x-1.5 flex-wrap gap-y-1 justify-center">
-                        <span className={`text-[8px] sm:text-[9px] font-mono uppercase tracking-wider px-2 py-0.5 border rounded-full ${chipBgClass}`}>
+                        <span className={`font-mono uppercase tracking-wider px-2 py-0.5 border rounded-full ${chipBgClass}`} style={{ fontSize: `${badgeFontSize}px` }}>
                           {tag1}
                         </span>
                         <span
-                          className="text-[8px] sm:text-[9px] font-mono uppercase tracking-wider px-2 py-0.5 border rounded-full font-semibold"
+                          className="font-mono uppercase tracking-wider px-2 py-0.5 border rounded-full font-semibold"
                           style={{
                             borderColor: `${activeAccent}80`,
                             backgroundColor: isDarkMode ? `${activeAccent}18` : `${activeAccent}1a`,
                             color: activeAccent,
+                            fontSize: `${badgeFontSize}px`,
                           }}
                         >
                           {tag2}
                         </span>
-                        <span className={`text-[8px] sm:text-[9px] font-mono uppercase tracking-wider px-2 py-0.5 border rounded-full ${chipBgClass}`}>
+                        <span className={`font-mono uppercase tracking-wider px-2 py-0.5 border rounded-full ${chipBgClass}`} style={{ fontSize: `${badgeFontSize}px` }}>
                           {tag3}
                         </span>
                       </div>
@@ -1148,10 +1171,10 @@ export function App() {
                         {/* Left Zone: Headline & Specs */}
                         <div className="flex-1 min-w-0 flex flex-col justify-center py-0.5">
                           <div className="flex items-center space-x-2">
-                            <span className="text-[8px] font-mono tracking-widest uppercase font-semibold" style={{ color: activeBadgeColor }}>
+                            <span className="font-mono tracking-widest uppercase font-semibold" style={{ color: activeBadgeColor, fontSize: `${badgeFontSize}px` }}>
                               {activeBadgeText}
                             </span>
-                            <span className={`text-[8px] font-mono border ${specCodeBgClass} px-1.5 py-0.2 rounded-xs`}>
+                            <span className={`font-mono border ${specCodeBgClass} px-1.5 py-0.2 rounded-xs`} style={{ fontSize: `${specCodeFontSize}px` }}>
                               {activeSpecCode}
                             </span>
                           </div>
@@ -1165,7 +1188,7 @@ export function App() {
                           </h2>
 
                           {showSubline && (
-                            <p id="creative-subline" className={`text-[10px] font-serif italic ${textSublineClass} mt-0.5 truncate`}>
+                            <p id="creative-subline" className={`font-serif italic ${textSublineClass} mt-0.5 truncate`} style={{ fontSize: `${sublineFontSize}px` }}>
                               {activeSublineText}
                             </p>
                           )}
@@ -1173,18 +1196,18 @@ export function App() {
 
                         {/* Center Zone: Acquisition Price */}
                         <div className="shrink-0 flex flex-col items-center justify-center px-3 border-l border-r border-[#e2dad2]/60 dark:border-stone-800">
-                          <span className={`text-[7px] font-mono uppercase tracking-widest ${textMutedClass}`}>
+                          <span className={`font-mono uppercase tracking-widest ${textMutedClass}`} style={{ fontSize: `${acqSpecFontSize}px` }}>
                             Acquisition Spec
                           </span>
                           <div className="flex items-baseline space-x-1.5">
-                            <span className={`font-editorial text-lg ${textHeadlineClass} font-normal`}>
+                            <span className={`font-editorial ${textHeadlineClass} font-normal`} style={{ fontSize: `${priceFontSize}px` }}>
                               {activePriceText}
                             </span>
-                            <span className={`font-mono text-[10px] ${textMutedClass} line-through`}>
+                            <span className={`font-mono ${textMutedClass} line-through`} style={{ fontSize: `${originalPriceFontSize}px` }}>
                               {activeOriginalPrice}
                             </span>
                           </div>
-                          <span className="text-[7px] font-mono uppercase tracking-widest font-semibold" style={{ color: activeAccent }}>
+                          <span className="font-mono uppercase tracking-widest font-semibold" style={{ color: activeAccent, fontSize: `${editionFontSize}px` }}>
                             {activeEdition}
                           </span>
                         </div>
@@ -1202,8 +1225,8 @@ export function App() {
                             </div>
                           )}
                           <button
-                            className="h-8 px-4 text-[#fffdfa] font-mono text-[10px] uppercase tracking-wider font-bold rounded-xl flex items-center space-x-2 transition-all shadow-md hover:brightness-110 active:scale-[0.99] cursor-pointer"
-                            style={{ backgroundColor: activeAccent }}
+                            className="px-4 text-[#fffdfa] font-mono uppercase tracking-wider font-bold rounded-xl flex items-center space-x-2 transition-all shadow-md hover:brightness-110 active:scale-[0.99] cursor-pointer"
+                            style={{ backgroundColor: activeAccent, fontSize: `${ctaFontSize}px`, height: `${ctaHeight}px` }}
                           >
                             <span className="whitespace-nowrap">{activeCta}</span>
                             <span>→</span>
@@ -1224,10 +1247,10 @@ export function App() {
                         <div className="flex flex-col justify-between h-full py-0.5 min-w-0">
                           <div className="min-w-0">
                             <div className="flex items-center space-x-2">
-                              <span className="text-[9px] font-mono tracking-widest uppercase font-semibold truncate" style={{ color: activeBadgeColor }}>
+                              <span className="font-mono tracking-widest uppercase font-semibold truncate" style={{ color: activeBadgeColor, fontSize: `${badgeFontSize}px` }}>
                                 {activeBadgeText}
                               </span>
-                              <span className={`text-[8px] font-mono border ${specCodeBgClass} px-2 py-0.5 rounded-xs shrink-0`}>
+                              <span className={`font-mono border ${specCodeBgClass} px-2 py-0.5 rounded-xs shrink-0`} style={{ fontSize: `${specCodeFontSize}px` }}>
                                 {activeSpecCode}
                               </span>
                             </div>
@@ -1246,7 +1269,7 @@ export function App() {
                             </h2>
 
                             {showSubline && (
-                              <p id="creative-subline" className={`text-[10px] sm:text-[11px] font-serif italic ${textSublineClass} mt-1 leading-snug line-clamp-2`}>
+                              <p id="creative-subline" className={`font-serif italic ${textSublineClass} mt-1 leading-snug line-clamp-2`} style={{ fontSize: `${sublineFontSize}px` }}>
                                 {activeSublineText}
                               </p>
                             )}
@@ -1256,26 +1279,26 @@ export function App() {
                           <div className={`space-y-1.5 pt-1.5 border-t ${borderSubtleClass}`}>
                             <div className="flex items-baseline justify-between">
                               <div>
-                                <span className={`text-[7px] font-mono uppercase tracking-widest ${textMutedClass} block`}>
+                                <span className={`font-mono uppercase tracking-widest ${textMutedClass} block`} style={{ fontSize: `${acqSpecFontSize}px` }}>
                                   Acquisition Spec
                                 </span>
                                 <div className="flex items-baseline space-x-1.5">
-                                  <span className={`font-editorial ${isVeryCompactH ? 'text-lg' : 'text-xl'} ${textHeadlineClass} font-normal`}>
+                                  <span className={`font-editorial ${textHeadlineClass} font-normal`} style={{ fontSize: `${priceFontSize}px` }}>
                                     {activePriceText}
                                   </span>
-                                  <span className={`font-mono text-[10px] sm:text-xs ${textMutedClass} line-through`}>
+                                  <span className={`font-mono ${textMutedClass} line-through`} style={{ fontSize: `${originalPriceFontSize}px` }}>
                                     {activeOriginalPrice}
                                   </span>
                                 </div>
                               </div>
-                              <span className="text-[8px] font-mono uppercase tracking-widest font-semibold" style={{ color: activeAccent }}>
+                              <span className="font-mono uppercase tracking-widest font-semibold" style={{ color: activeAccent, fontSize: `${editionFontSize}px` }}>
                                 {activeEdition}
                               </span>
                             </div>
 
                             <button
-                              className={`w-full ${isVeryCompactH ? 'h-7 text-[10px] rounded-lg' : 'h-8 sm:h-9 text-[11px] rounded-xl'} text-[#fffdfa] font-mono uppercase tracking-wider font-bold flex items-center justify-between px-3 sm:px-4 transition-all shadow-md hover:brightness-110 active:scale-[0.99] cursor-pointer`}
-                              style={{ backgroundColor: activeAccent }}
+                              className={`w-full ${isVeryCompactH ? 'rounded-lg' : 'rounded-xl'} text-[#fffdfa] font-mono uppercase tracking-wider font-bold flex items-center justify-between px-3 sm:px-4 transition-all shadow-md hover:brightness-110 active:scale-[0.99] cursor-pointer`}
+                              style={{ backgroundColor: activeAccent, fontSize: `${ctaFontSize}px`, height: `${ctaHeight}px` }}
                             >
                               <span className="truncate">{activeCta}</span>
                               <span className="ml-2 font-bold">→</span>
@@ -1308,12 +1331,12 @@ export function App() {
                       <div className={`relative z-10 shrink-0 ${hasNotch ? 'pt-7' : 'pt-0.5'}`}>
                         <div className="flex items-center justify-between">
                           <span
-                            className="text-[8px] sm:text-[9px] font-mono tracking-widest uppercase font-semibold truncate mr-1"
-                            style={{ color: activeBadgeColor }}
+                            className="font-mono tracking-widest uppercase font-semibold truncate mr-1"
+                            style={{ color: activeBadgeColor, fontSize: `${badgeFontSize}px` }}
                           >
                             {activeBadgeText}
                           </span>
-                          <span className={`text-[8px] font-mono border ${specCodeBgClass} px-1.5 py-0.2 rounded-xs shrink-0`}>
+                          <span className={`font-mono border ${specCodeBgClass} px-1.5 py-0.2 rounded-xs shrink-0`} style={{ fontSize: `${specCodeFontSize}px` }}>
                             {activeSpecCode}
                           </span>
                         </div>
@@ -1332,7 +1355,7 @@ export function App() {
                         </h2>
 
                         {showSubline && (
-                          <p id="creative-subline" className={`text-[10px] sm:text-[11px] font-serif italic ${textSublineClass} mt-1 leading-snug line-clamp-2`}>
+                          <p id="creative-subline" className={`font-serif italic ${textSublineClass} mt-1 leading-snug line-clamp-2`} style={{ fontSize: `${sublineFontSize}px` }}>
                             {activeSublineText}
                           </p>
                         )}
@@ -1355,30 +1378,30 @@ export function App() {
                         <div className={`flex items-baseline justify-between border-b ${borderSubtleClass} ${isVeryCompactH ? 'pb-0.5' : 'pb-1.5'}`}>
                           <div>
                             {!isVeryCompactH && (
-                              <span className={`text-[7px] sm:text-[8px] font-mono uppercase tracking-widest ${textMutedClass} block`}>
+                              <span className={`font-mono uppercase tracking-widest ${textMutedClass} block`} style={{ fontSize: `${acqSpecFontSize}px` }}>
                                 Acquisition Spec
                               </span>
                             )}
                             <div className="flex items-baseline space-x-1.5">
-                              <span className={`font-editorial ${isVeryCompactH ? 'text-lg' : isCompactH ? 'text-xl' : 'text-2xl'} ${textHeadlineClass} font-normal`}>
+                              <span className={`font-editorial ${textHeadlineClass} font-normal`} style={{ fontSize: `${priceFontSize}px` }}>
                                 {activePriceText}
                               </span>
-                              <span className={`font-mono ${isVeryCompactH ? 'text-[9px]' : isCompactH ? 'text-[10px]' : 'text-xs'} ${textMutedClass} line-through`}>
+                              <span className={`font-mono ${textMutedClass} line-through`} style={{ fontSize: `${originalPriceFontSize}px` }}>
                                 {activeOriginalPrice}
                               </span>
                             </div>
                           </div>
-                          <span className="text-[8px] sm:text-[9px] font-mono uppercase tracking-widest font-semibold" style={{ color: activeAccent }}>
+                          <span className="font-mono uppercase tracking-widest font-semibold" style={{ color: activeAccent, fontSize: `${editionFontSize}px` }}>
                             {activeEdition}
                           </span>
                         </div>
 
                         <button
-                          className={`w-full ${isVeryCompactH ? 'h-7 text-[10px] rounded-lg' : isCompactH ? 'h-9 text-[11px] rounded-xl' : 'h-11 text-xs rounded-xl sm:rounded-2xl'} text-[#fffdfa] font-mono uppercase tracking-monumental flex items-center justify-between px-3 sm:px-4 transition-all shadow-lg hover:brightness-110 active:scale-[0.99] cursor-pointer`}
-                          style={{ backgroundColor: activeAccent }}
+                          className={`w-full ${isVeryCompactH ? 'rounded-lg' : isCompactH ? 'rounded-xl' : 'rounded-xl sm:rounded-2xl'} text-[#fffdfa] font-mono uppercase tracking-monumental flex items-center justify-between px-3 sm:px-4 transition-all shadow-lg hover:brightness-110 active:scale-[0.99] cursor-pointer`}
+                          style={{ backgroundColor: activeAccent, fontSize: `${ctaFontSize}px`, height: `${ctaHeight}px` }}
                         >
                           <span className="font-bold truncate">{activeCta}</span>
-                          <span className="text-xs font-bold shrink-0 ml-1.5">→</span>
+                          <span className="font-bold shrink-0 ml-1.5" style={{ fontSize: `${ctaFontSize}px` }}>→</span>
                         </button>
                       </div>
                     </div>
